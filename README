@@ -1,0 +1,13 @@
+pomfit - Pomf it !
+==================
+
+About:
+
+Simple image and file uploader for http://pomf.se written in C using GTK.
+Just alternative to bash scripts lying around.
+
+==================
+Features:
+	Global hotkeys
+	Notifications
+
