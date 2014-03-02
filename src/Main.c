@@ -64,7 +64,7 @@ int main (int   argc,char *argv[])
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 	gtk_window_set_resizable(GTK_WINDOW(window) , FALSE);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ALWAYS);
-	p_icon = gdk_pixbuf_new_from_file("/usr/share/pixmaps/pomfit.png",&error);
+	p_icon = gdk_pixbuf_new_from_file("/usr/local/share/pixmaps/pomfit.png",&error);
 	gtk_window_set_default_icon(GDK_PIXBUF(p_icon));
 
 	menu = gtk_menu_new();
