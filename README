@@ -13,3 +13,6 @@ Features:
 ==================
 Install:
 	Extract -> ./configure -> make ->(su/sudo) make install
+==================
+Dependencies:
+	'scrot' 'curl' 'libkeybinder3' 'libnotify'
