@@ -24,5 +24,6 @@
 	void notify_error(char *str_error);
 	void take_screenshot(const char *keystring, void *user_data);
 	void open_last_link(const char *keystring, void *user_data);
+	void save_to_log (char* FileName , char* url);
 #endif
 
