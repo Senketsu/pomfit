@@ -126,13 +126,18 @@ void curl_upload_file(void)
 	CURL *curl;
 	CURLcode res;
 	char *pChoosedFile = NULL;
+	gchar *pFileName = NULL;
 	char output_url[64]= "http://a.pomf.se/";
 	char temp_file[256];
+	char FileName[256];
 	strcpy(temp_file , home_dir);
 	strcat(temp_file , "/curl_output.txt");
 	char buff[512];
 	char *pBuff;
 	pChoosedFile = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sel_but));
+	pFileName = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sel_but));
+	strcpy(FileName , pFileName);
+	pFileName = NULL;
 	if(!pChoosedFile)
 		return;
 	struct curl_httppost *post = NULL;
@@ -193,8 +198,12 @@ void curl_upload_file(void)
 	system(buff);
 	if(fd)
 		fclose(fd);
+	/* SAVE LOG */
+	save_to_log(FileName , output_url);
+	
 	pBuff = NULL;
 	pChoosedFile = NULL;
+	
 	NotifyNotification *Uploaded;
 	notify_init("Uploaded");
 	Uploaded = notify_notification_new("Upload finished", output_url , NULL);
@@ -206,6 +215,23 @@ void curl_upload_file(void)
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), 
 							output_url, strlen(output_url));
 }
+
+void save_to_log (char* FileName , char* url)
+{
+	char log_path[100];
+	sprintf(log_path, "%s/Pomfit_url_log.txt", home_dir);
+	FILE *url_log;
+	url_log = fopen(log_path, "a");
+	if(!url_log)
+	{
+			perror("Error opening log file\nCreating one");
+			return;
+	}
+	fseek(url_log,0, SEEK_END); 
+	fprintf(url_log,"%s - %s\n",FileName ,url);
+	fclose(url_log);
+}
+
 
 void notify_error(char *str_error)
 {
