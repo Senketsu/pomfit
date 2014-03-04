@@ -198,9 +198,7 @@ void curl_upload_file(void)
 	system(buff);
 	if(fd)
 		fclose(fd);
-	/* SAVE LOG */
 	save_to_log(FileName , output_url);
-	
 	pBuff = NULL;
 	pChoosedFile = NULL;
 	
@@ -224,7 +222,7 @@ void save_to_log (char* FileName , char* url)
 	url_log = fopen(log_path, "a");
 	if(!url_log)
 	{
-			perror("Error opening log file\nCreating one");
+			perror("Error opening log file\n");
 			return;
 	}
 	fseek(url_log,0, SEEK_END); 
