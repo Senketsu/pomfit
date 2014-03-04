@@ -10,6 +10,7 @@ Just alternative to bash scripts lying around.
 Features:
 	Global hotkeys
 	Notifications
+	Upload log
 ==================
 Install:
 	Extract -> ./configure -> make ->(su/sudo) make install
