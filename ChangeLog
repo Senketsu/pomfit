@@ -1,3 +1,7 @@
+*2014-03-7	Miroslav Dulka <senketsu.dev@gmail.com>
+*	Fixed bug that caused uploader to crash when uploadig file with whitespace characters in name.
+*	Also little cosmetic changes in code & now log saves filename instead fullpath&filename
+*
 *2014-03-4	Miroslav Dulka <senketsu.dev@gmail.com>
 *	Added "upload" log , might be useful sometimes
 *
