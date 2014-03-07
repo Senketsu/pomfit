@@ -30,24 +30,22 @@ void quick_upload_pic(const char *keystring, void *user_data)
 {
 	char scan[200];
 	char file[512];
-	char buff[512];
-	strcpy(file , home_dir);
-	strcat(file , "/");
+	char buff[1024];
+	char output_url[256];
+	char temp_file[256];
+	char *pBuff = NULL;
+	sprintf(temp_file ,"%s/curl_output.txt" , home_dir);
 	system("sleep 0.3");	
 	system("cd && scrot -s '%Y-%m-%d_%H%M%S_pomfup.png'");
+	
 	FILE *fp = popen("cd && ls -Art *pomfup.png | tail -n 1","r");
 	if(!fp)
 		return;
 	fscanf(fp, "%s",scan);
 	pclose(fp);
-	strcat(file , scan);
+	sprintf(file ,"%s/%s" , home_dir ,scan);
 	CURL *curl;
 	CURLcode res;
-	char output_url[256]= "http://a.pomf.se/";
-	char temp_file[256];
-	strcpy(temp_file , home_dir);
-	strcat(temp_file , "/curl_output.txt");
-	char *pBuff;
 	struct curl_httppost *post = NULL;
 	struct curl_httppost *last = NULL;
 	FILE *fd;
@@ -91,22 +89,20 @@ void quick_upload_pic(const char *keystring, void *user_data)
 		curl_easy_cleanup(curl);
 	}
 	fclose(output);
+	if(fd)
+		fclose(fd);
 	output = fopen(temp_file, "r");
 	fscanf(output ,"%s", buff);
 	pBuff=strstr(buff, "url\":\"");
 	pBuff += strlen("url\":\"");
 	pBuff=strtok(pBuff, "\"");
-	strcat(output_url, pBuff);
+	sprintf(output_url, "http://a.pomf.se/%s",pBuff);
 	gtk_link_button_set_uri(GTK_LINK_BUTTON(link_but), output_url);
 	gtk_button_set_label(GTK_BUTTON(link_but), output_url);
 	fclose(output);
-	strcpy(buff, "rm ");
-	strcat(buff,temp_file);
+	sprintf(buff , "rm %s" , temp_file);
 	system(buff);
-	if(fd)
-		fclose(fd);
-	strcpy(buff, "rm ");
-	strcat(buff,file);
+	sprintf(buff , "rm %s" , file);
 	system(buff);
 	pBuff = NULL;
 	NotifyNotification *Uploaded;
@@ -123,23 +119,23 @@ void quick_upload_pic(const char *keystring, void *user_data)
 
 void curl_upload_file(void)
 {
-	CURL *curl;
-	CURLcode res;
+	char *pBuff = NULL;
+	char *pGetline = NULL;
+	ssize_t len = 0;
 	char *pChoosedFile = NULL;
-	gchar *pFileName = NULL;
-	char output_url[64]= "http://a.pomf.se/";
+	char buff[1024];
 	char temp_file[256];
 	char FileName[256];
-	strcpy(temp_file , home_dir);
-	strcat(temp_file , "/curl_output.txt");
-	char buff[512];
-	char *pBuff;
+	char output_url[256];
+	sprintf(temp_file ,"%s/curl_output.txt" , home_dir);
 	pChoosedFile = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sel_but));
-	pFileName = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sel_but));
-	strcpy(FileName , pFileName);
-	pFileName = NULL;
 	if(!pChoosedFile)
+	{
+		perror("no file selected");
 		return;
+	}
+	CURL *curl;
+	CURLcode res;
 	struct curl_httppost *post = NULL;
 	struct curl_httppost *last = NULL;
 	FILE *fd;
@@ -184,27 +180,36 @@ void curl_upload_file(void)
 		curl_easy_cleanup(curl);
 	}
 	fclose(output);
-	output = fopen(temp_file, "r");
-	fscanf(output ,"%s", buff);
-	pBuff=strstr(buff, "url\":\"");
-	pBuff += strlen("url\":\"");
-	pBuff=strtok(pBuff, "\"");
-	strcat(output_url, pBuff);
-	gtk_link_button_set_uri(GTK_LINK_BUTTON(link_but), output_url);
-	gtk_button_set_label(GTK_BUTTON(link_but), output_url);
-	fclose(output);
-	strcpy(buff, "rm ");
-	strcat(buff,temp_file);
-	system(buff);
 	if(fd)
 		fclose(fd);
-	save_to_log(FileName , output_url);
+	output = fopen(temp_file, "r");
+	if(!output)
+	{
+		perror("failed to open output file");
+		return;
+	}
+	getline(&pGetline, &len, output);
+	pBuff = strstr(pGetline , "url\":\"");
+	pBuff += strlen("url\":\"");
+	pBuff = strtok(pBuff , "\"");
+	sprintf(output_url ,"http://a.pomf.se/%s" , pBuff);
+	gtk_link_button_set_uri(GTK_LINK_BUTTON(link_but), output_url);
+	gtk_button_set_label(GTK_BUTTON(link_but), output_url);
+	getline(&pGetline, &len, output);
+	pBuff = strstr(pGetline , "name\":\"");
+	pBuff += strlen("name\":\"");
+	pBuff = strtok(pBuff , "\"");
+	sprintf(FileName ,"%s" , pBuff);
+	fclose(output);
+	sprintf(buff ,"rm %s" , temp_file);
+	system(buff);
 	pBuff = NULL;
 	pChoosedFile = NULL;
-	
+	pGetline = NULL;
+	save_to_log(FileName , output_url);
 	NotifyNotification *Uploaded;
 	notify_init("Uploaded");
-	Uploaded = notify_notification_new("Upload finished", output_url , NULL);
+	Uploaded = notify_notification_new(FileName, output_url , NULL);
 	notify_notification_set_icon_from_pixbuf(Uploaded , p_icon);
 	notify_notification_show (Uploaded, NULL);
 	g_object_unref(G_OBJECT(Uploaded));
@@ -216,7 +221,7 @@ void curl_upload_file(void)
 
 void save_to_log (char* FileName , char* url)
 {
-	char log_path[100];
+	char log_path[256];
 	sprintf(log_path, "%s/Pomfit_url_log.txt", home_dir);
 	FILE *url_log;
 	url_log = fopen(log_path, "a");
@@ -225,7 +230,6 @@ void save_to_log (char* FileName , char* url)
 			perror("Error opening log file\n");
 			return;
 	}
-	fseek(url_log,0, SEEK_END); 
 	fprintf(url_log,"%s - %s\n",FileName ,url);
 	fclose(url_log);
 }
@@ -245,9 +249,8 @@ void notify_error(char *str_error)
 
 void open_last_link(const char *keystring, void *user_data)
 {
-	char command[128]="xdg-open ";
-	strcat(command, last_upload);
-	strcat(command, " &");
+	char command[128];
+	sprintf(command , "xdg-open %s &", last_upload);
 	system(command);
 }
 
