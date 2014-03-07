@@ -12,13 +12,15 @@ Features:
 	Notifications
 	Upload log
 ==================
-Global hotkeys:	"Win + U" - calls for "scrot -s" , uploads right away and copies link into clipboard
+Global hotkeys:	
+		"Win + U" - calls for "scrot -s" , uploads right away 
+			and copies link into clipboard
 		"Win + W" - opens web browser with last link
 		"Win + C" - same as "Win + U" BUT without uploading
 You can always edit them them in the Main source file to fit your taste.
 ==================
 Install:
-	Extract -> Run autoget.sh -> make ->(su/sudo) make install
+	Extract -> Run autogen.sh -> make ->(su/sudo) make install
 ==================
 Dependencies:
 	'scrot' 'curl' 'libkeybinder3' 'libnotify'
