@@ -22,3 +22,7 @@ Install:
 ==================
 Dependencies:
 	'scrot' 'curl' 'libkeybinder3' 'libnotify'
+==================
+Arch Linux Package:
+a.pomf.se/zognxb.tar.xz
+Install: pacman -U "packagename"
