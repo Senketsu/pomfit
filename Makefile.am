@@ -1,4 +1,4 @@
 SUBDIRS = src data
-dist_doc_DATA = README
+dist_doc_DATA = README AUTHORS ChangeLog COPYING NEWS
 
 

@@ -18,7 +18,7 @@ Global hotkeys:	"Win + U" - calls for "scrot -s" , uploads right away and copies
 You can always edit them them in the Main source file to fit your taste.
 ==================
 Install:
-	Extract -> ./configure -> make ->(su/sudo) make install
+	Extract -> Run autoget.sh -> make ->(su/sudo) make install
 ==================
 Dependencies:
 	'scrot' 'curl' 'libkeybinder3' 'libnotify'
