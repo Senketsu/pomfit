@@ -1,7 +1,7 @@
 /*
  * This file is part of pomfit project.
  * pomfit - simple gtk image & file uploader for <http://pomf.se/>
- * Copyright (C) 2014  Senketsu <senketsu.dev@gmail.com>
+ * Copyright (C) 2014  Miroslav Dulka <senketsu.dev@gmail.com>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,13 +17,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef POMFIT_H
-	#define POMFIT_H
-	void quick_upload_pic(const char *keystring, void *user_data);
-	void curl_upload_file(void);
-	void notify_error(char *str_error);
-	void take_screenshot(const char *keystring, void *user_data);
-	void open_last_link(const char *keystring, void *user_data);
-	void save_to_log (char* FileName , char* url);
+#ifndef HEADER_H
+	#define HEADER_H
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include <gtk/gtk.h>
+	#include <stdbool.h>
+	#include <string.h>
+	#include <errno.h>
+	#include <libnotify/notify.h>
+	#include <curl/curl.h>
+	#include <keybinder.h>
+	#include "config.h"
 #endif
-
