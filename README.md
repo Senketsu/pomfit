@@ -17,7 +17,7 @@ Just alternative to bash scripts lying around.
 * "Win + U" - calls for "scrot -s" , uploads right away and copies link into clipboard
 * "Win + W" - opens web browser with last link
 * "Win + C" - same as "Win + U" BUT without uploading
-*You can always edit them them in the Main source file to fit your taste.*
+	You can always edit them them in the Main source file to fit your taste.*
 
 ## Install:
 ----------
@@ -28,5 +28,5 @@ Just alternative to bash scripts lying around.
 	'scrot' 'curl' 'libkeybinder3' 'libnotify'
 
 ### Arch Linux Package:
-[Version 0.0.3](http://a.pomf.se/ibyzml.tar.xz)
-Install: pacman -U "packagename"
+[Version 0.0.3](http://a.pomf.se/fmqman.tar.xz)
+	Install: pacman -U "packagename"
