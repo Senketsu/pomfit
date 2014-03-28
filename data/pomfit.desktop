@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Pomfit
+Comment=Pomf.se Uploader
+Exec=pomfit
+Terminal=false
+Type=Application
+StartupNotify=true
+Icon=pomfit.png
+Categories=Application;Network;

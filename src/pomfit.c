@@ -52,14 +52,14 @@ void quick_upload_pic(const char *keystring, void *user_data)
 	fd = fopen(file, "rb");
 	if(!fd)
 	{
-		notify_error("Error opening file to upload ..");
+		perror("Error opening file to upload ..");
 		return;
 	}
 	FILE *output;
 	output = fopen(temp_file, "w"); 
 	if(!output)
 	{
-		notify_error("Error opening file to write");
+		perror("Error opening file to write");
 		return;
 	}
 	curl = curl_easy_init();
@@ -83,7 +83,7 @@ void quick_upload_pic(const char *keystring, void *user_data)
 		{ 
 			fprintf(stderr, "curl_easy_perform() failed: %s\n",
 					curl_easy_strerror(res));
-			notify_error("Curl failed to upload file");
+			perror("Curl failed to upload file");
 		}
 		curl_formfree(post);
 		curl_easy_cleanup(curl);
@@ -105,19 +105,13 @@ void quick_upload_pic(const char *keystring, void *user_data)
 	sprintf(buff , "rm %s" , file);
 	system(buff);
 	pBuff = NULL;
-	NotifyNotification *Uploaded;
-	notify_init("Uploaded");
-	Uploaded = notify_notification_new("Upload finished", output_url , NULL);
-	notify_notification_set_icon_from_pixbuf(Uploaded , p_icon);
-	notify_notification_show (Uploaded, NULL);
-	g_object_unref(G_OBJECT(Uploaded));
-	notify_uninit();
+	notify_me(output_url,"Upload finished");
 	strcpy(last_upload, output_url);
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), 
 							output_url, strlen(output_url));
 }
 
-void curl_upload_file(void)
+void curl_upload_file(char *file_path)
 {
 	char *pBuff = NULL;
 	char *pGetline = NULL;
@@ -129,37 +123,46 @@ void curl_upload_file(void)
 	char output_url[256];
 	sprintf(temp_file ,"%s/curl_output.txt" , home_dir);
 	pChoosedFile = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sel_but));
-	if(!pChoosedFile)
-	{
-		perror("no file selected");
-		return;
-	}
 	CURL *curl;
 	CURLcode res;
 	struct curl_httppost *post = NULL;
 	struct curl_httppost *last = NULL;
 	FILE *fd;
-	fd = fopen(pChoosedFile, "rb");
+	if(pChoosedFile==NULL)
+		fd = fopen(file_path, "rb");
+	else
+		fd = fopen(pChoosedFile, "rb");
 	if(!fd)
 	{
-		notify_error("Error opening file to upload");
+		perror("Error opening file to upload");
 		return;
 	}
 	FILE *output;
 	output = fopen(temp_file, "w");
 	if(!output)
 	{
-		notify_error("Error opening file to write");
+		perror("Error opening file to write");
 		return;
 	}
 	curl = curl_easy_init();
 	if(curl) 
 	{
-		curl_formadd(&post, &last,
+		if(pChoosedFile==NULL)
+		{
+			curl_formadd(&post, &last,
+				CURLFORM_COPYNAME, "files[]",
+				CURLFORM_FILE, file_path,
+				CURLFORM_CONTENTTYPE, "application/octet-stream",
+				CURLFORM_END);
+		}
+		else
+		{
+			curl_formadd(&post, &last,
 				CURLFORM_COPYNAME, "files[]",
 				CURLFORM_FILE, pChoosedFile,
 				CURLFORM_CONTENTTYPE, "application/octet-stream",
 				CURLFORM_END);
+		}
 		curl_easy_setopt(curl, CURLOPT_URL, "http://pomf.se/upload.php");
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
 		curl_easy_setopt(curl, CURLOPT_READDATA, fd);
@@ -173,7 +176,7 @@ void curl_upload_file(void)
 		{ 
 			fprintf(stderr, "curl_easy_perform() failed: %s\n",
 					curl_easy_strerror(res));
-			notify_error("Curl failed to upload file");
+			perror("Curl failed to upload file");
 		}
 		gtk_file_chooser_unselect_all(GTK_FILE_CHOOSER(sel_but));
 		curl_formfree(post);
@@ -206,20 +209,15 @@ void curl_upload_file(void)
 	pBuff = NULL;
 	pChoosedFile = NULL;
 	pGetline = NULL;
+	file_path = NULL;
 	save_to_log(FileName , output_url);
-	NotifyNotification *Uploaded;
-	notify_init("Uploaded");
-	Uploaded = notify_notification_new(FileName, output_url , NULL);
-	notify_notification_set_icon_from_pixbuf(Uploaded , p_icon);
-	notify_notification_show (Uploaded, NULL);
-	g_object_unref(G_OBJECT(Uploaded));
-	notify_uninit();
+	notify_me(output_url,FileName);
 	strcpy(last_upload, output_url);
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), 
 							output_url, strlen(output_url));
 }
 
-void save_to_log (char* FileName , char* url)
+void save_to_log (char *FileName , char *url)
 {
 	char log_path[256];
 	sprintf(log_path, "%s/Pomfit_url_log.txt", home_dir);
@@ -235,15 +233,14 @@ void save_to_log (char* FileName , char* url)
 }
 
 
-void notify_error(char *str_error)
+void notify_me(char *output_url, char *FileName)
 {
-	NotifyNotification *Error;
-	notify_init("Error");
-	Error = notify_notification_new ("Error occurred", str_error , NULL );
-	notify_notification_set_icon_from_pixbuf(Error , p_icon);
-	notify_notification_set_timeout(Error,3000);
-	notify_notification_show (Error, NULL);
-	g_object_unref(G_OBJECT(Error));
+	NotifyNotification *Uploaded;
+	notify_init("Uploaded");
+	Uploaded = notify_notification_new(FileName, output_url , NULL);
+	notify_notification_set_icon_from_pixbuf(Uploaded , p_icon);
+	notify_notification_show (Uploaded, NULL);
+	g_object_unref(G_OBJECT(Uploaded));
 	notify_uninit();
 }
 

@@ -28,5 +28,4 @@
 	#include <libnotify/notify.h>
 	#include <curl/curl.h>
 	#include <keybinder.h>
-	#include "config.h"
 #endif

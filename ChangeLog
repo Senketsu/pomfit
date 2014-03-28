@@ -1,3 +1,7 @@
+*2014-03-28	Senketsu <senketsu.dev@gmail.com>
+*	Added tray menu items for file/screencap upload.Added .desktop file.
+*	Opening file from file manager with pomfit should upload it.
+*	Pomfit will run only one instance now.
 *2014-03-7	Senketsu <senketsu.dev@gmail.com>
 *	Fixed bug that caused uploader to crash when uploadig file with whitespace characters in name.
 *	Also little cosmetic changes in code & now log saves filename instead fullpath&filename

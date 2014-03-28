@@ -26,6 +26,9 @@
 
 static GtkStatusIcon *create_tray_icon();
 static void get_home();
+static void trayCapUp(GtkMenuItem *item, gpointer user_data);
+static void trayFileUp(GtkMenuItem *item, gpointer user_data);
+static void trayCap(GtkMenuItem *item, gpointer user_data);
 static void trayView(GtkMenuItem *item, gpointer window);
 static void trayExit(GtkMenuItem *item, gpointer user_data);
 static void tray_on_click(GtkStatusIcon *status_icon, gpointer user_data);
@@ -33,7 +36,8 @@ static void tray_on_menu(GtkStatusIcon *status_icon, guint button,
 							guint activate_time, gpointer user_data);
 
 bool hidden = TRUE;
-char home_dir[64]="\0";
+bool first_run = TRUE;
+char home_dir[64];
 char last_upload[64]="http://pomf.se";
 GtkWidget *window;
 GtkWidget *sel_but;
@@ -41,7 +45,35 @@ GtkWidget *link_but;
 GdkPixbuf *p_icon;
 GtkWidget *menu;
 
-int main (int   argc,char *argv[])
+static void quit (GSimpleAction *action, GVariant *parameter,
+						gpointer user_data)
+{
+	GApplication *application = user_data;
+	g_application_quit(application);
+}
+
+static void open_file(GApplication  *application,
+						GFile        **files,
+						gint           n_files,
+						const gchar   *hint)
+{
+	char *path = g_file_get_path (files[0]);
+	curl_upload_file(path);
+	path = NULL;
+}
+
+static void activate(void)
+{
+	if(first_run)
+	{
+		first_run = FALSE;
+		return;
+	}
+	gtk_widget_show(window);
+	hidden = FALSE;
+}
+
+static void startup (GtkApplication *pomfit, gpointer user_data)
 {
 	get_home();
 	
@@ -50,31 +82,38 @@ int main (int   argc,char *argv[])
 	GtkWidget *hbox;
 	GtkWidget *up_but;
 	GtkWidget *quit_but;
-	NotifyNotification *StartUP;
 	GtkFileFilter *filter_img;
 	GtkStatusIcon *tray_icon;
-	GtkWidget *menuExit;
-	GtkWidget *menuView;
-	
-	gtk_init (&argc, &argv);
+	GtkWidget *menuExit , *menuView, *menuCap, *menuCapUp, *menuFileUp;
 
-	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	window = gtk_application_window_new(pomfit);
 	gtk_window_set_title(GTK_WINDOW(window), "Pomf it!");
 	g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 	gtk_window_set_resizable(GTK_WINDOW(window) , FALSE);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ALWAYS);
 	p_icon = gdk_pixbuf_new_from_file("/usr/local/share/pixmaps/pomfit.png",&error);
-
 	gtk_window_set_default_icon(GDK_PIXBUF(p_icon));
-
+	
 	menu = gtk_menu_new();
+	menuCapUp = gtk_menu_item_new_with_label("Upload Screencap");
+	menuFileUp = gtk_menu_item_new_with_label("Upload File");
+	menuCap = gtk_menu_item_new_with_label("Screencap");
 	menuView = gtk_menu_item_new_with_label("View");
 	menuExit = gtk_menu_item_new_with_label("Exit");
+	g_signal_connect(G_OBJECT(menuCapUp), "activate", 
+						G_CALLBACK(trayCapUp), NULL);
+	g_signal_connect(G_OBJECT(menuCap), "activate", 
+						G_CALLBACK(trayCap), NULL);
+	g_signal_connect(G_OBJECT(menuFileUp), "activate", 
+						G_CALLBACK(trayFileUp), NULL);
 	g_signal_connect(G_OBJECT(menuView), "activate", 
 						G_CALLBACK(trayView), window);
 	g_signal_connect(G_OBJECT(menuExit), "activate", 
-						G_CALLBACK(trayExit), NULL);
+						G_CALLBACK(trayExit), pomfit);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuCapUp);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuFileUp);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuCap);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuView);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuExit);
 	gtk_widget_show_all(menu);	
@@ -84,15 +123,6 @@ int main (int   argc,char *argv[])
 	keybinder_bind(BIND_CAP, take_screenshot, NULL);
 	keybinder_bind(BIND_UP, quick_upload_pic, NULL);
 	keybinder_bind(BIND_OPEN, open_last_link, NULL);
-	
-	notify_init("Running..");
-	StartUP = notify_notification_new("Pomf it ! uploader running",
-				"\"Super/Win+u\" to screencap & upload\n"
-				"\"Super/Win+c\" to screencap only(~/Pictures)" , NULL );
-	notify_notification_set_icon_from_pixbuf(StartUP , p_icon);
-	notify_notification_show(StartUP, NULL);
-	g_object_unref(G_OBJECT(StartUP));
-	notify_uninit();
 	
 	vbox1 = gtk_box_new(GTK_ORIENTATION_VERTICAL , 0);
 	gtk_container_add(GTK_CONTAINER(window), vbox1);
@@ -112,14 +142,26 @@ int main (int   argc,char *argv[])
 	gtk_box_pack_start(GTK_BOX(vbox1),GTK_WIDGET(link_but),TRUE,TRUE,0);
 	
 	quit_but = gtk_button_new_with_label("Exit");
-	g_signal_connect(quit_but, "clicked", G_CALLBACK(gtk_main_quit), NULL);
+	g_signal_connect(quit_but, "clicked", G_CALLBACK(quit), pomfit);
 	gtk_box_pack_end(GTK_BOX(vbox1),GTK_WIDGET(quit_but),TRUE,TRUE,0);
 
 	gtk_widget_show_all(window);
 	gtk_widget_hide(window);
-	gtk_main();
 
-	return 0;
+}
+
+int main (int argc,char *argv[])
+{
+	GtkApplication *pomfit;
+	int status;
+	
+	pomfit = gtk_application_new ("pomfit.uploader", G_APPLICATION_HANDLES_OPEN);
+	g_signal_connect (pomfit, "startup", G_CALLBACK (startup), NULL);
+	g_signal_connect (pomfit, "activate", G_CALLBACK (activate), NULL);
+	g_signal_connect (pomfit, "open", G_CALLBACK (open_file), argv);
+	status = g_application_run (G_APPLICATION (pomfit), argc, argv);
+	g_object_unref (pomfit);
+	return status;
 }
 
 
@@ -160,8 +202,49 @@ static GtkStatusIcon *create_tray_icon()
 
 static void trayExit(GtkMenuItem *item, gpointer user_data) 
 {
-	printf("exit\n");
-	gtk_main_quit();
+	quit(NULL,NULL,user_data);
+}
+
+static void trayCapUp(GtkMenuItem *item, gpointer user_data) 
+{
+	quick_upload_pic(NULL,NULL);
+}
+
+static void trayCap(GtkMenuItem *item, gpointer user_data) 
+{
+	take_screenshot(NULL,NULL);
+}
+
+static char* choose_file(void)
+{
+	GtkWidget *dialog;
+	dialog = gtk_file_chooser_dialog_new ("Upload File",
+							NULL,
+							GTK_FILE_CHOOSER_ACTION_OPEN,
+							"Cancel", GTK_RESPONSE_CANCEL,
+							"Select", GTK_RESPONSE_ACCEPT,
+							NULL);
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),home_dir);
+	char *filename = NULL;
+	if(gtk_dialog_run(GTK_DIALOG (dialog))==GTK_RESPONSE_ACCEPT)
+	{
+		filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+		gtk_widget_destroy(dialog);
+		return filename;
+	}
+	else
+		gtk_widget_destroy(dialog);
+		return NULL;
+}
+
+static void trayFileUp(GtkMenuItem *item, gpointer user_data) 
+{
+	char* pFileName = NULL;
+	pFileName = choose_file();
+	if(pFileName!=NULL)
+		curl_upload_file(pFileName);
+		
+	pFileName = NULL;
 }
 
 static void trayView(GtkMenuItem *item, gpointer window) 

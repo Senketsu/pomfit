@@ -20,8 +20,8 @@
 #ifndef POMFIT_H
 	#define POMFIT_H
 	void quick_upload_pic(const char *keystring, void *user_data);
-	void curl_upload_file(void);
-	void notify_error(char *str_error);
+	void curl_upload_file(char *file_path);
+	void notify_me(char *output_url, char *FileName);
 	void take_screenshot(const char *keystring, void *user_data);
 	void open_last_link(const char *keystring, void *user_data);
 	void save_to_log (char* FileName , char* url);
