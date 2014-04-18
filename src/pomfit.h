@@ -19,11 +19,15 @@
 
 #ifndef POMFIT_H
 	#define POMFIT_H
+	#define POMFIT_USER_AGENT "pomfit/0.0.4"
+	#define POMFIT_VERSION "\"Pomf it !\" Uploader version 0.0.4"
 	void quick_upload_pic(const char *keystring, void *user_data);
-	void curl_upload_file(char *file_path);
+	void curl_upload_file(char *file_path , gboolean user_data);
 	void notify_me(char *output_url, char *FileName);
 	void take_screenshot(const char *keystring, void *user_data);
 	void open_last_link(const char *keystring, void *user_data);
 	void save_to_log (char* FileName , char* url);
+	int up_progress (void* ptr, double TotalToDownload, double NowDownloaded, 
+							double TotalToUpload, double NowUploaded);
 #endif
 

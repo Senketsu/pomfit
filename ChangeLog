@@ -1,4 +1,16 @@
-*2014-03-28	Senketsu <senketsu.dev@gmail.com>
+*2014-04-18	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.4
+*** Happy Easter everyone! ***
+*	Added - File size limit check
+*	Added - Upload status bar
+*	Added - Keybind for file upload dialog 
+*	Now you can cancel upload
+*	UI will now update ,and won't freeze while uploading
+*	Screencaps will be saved in home dir from now on
+*	Default keybinds changed due to incompatibility on most Distros/DEs
+*	File chooser now with image preview & 2 filters (all files/images)
+*	Animated images preview optional (not resized therefore isn't recommended for everyone)
+*	Some minor changes
+*2014-03-28	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.3
 *	Added tray menu items for file/screencap upload.Added .desktop file.
 *	Opening file from file manager with pomfit should upload it.
 *	Pomfit will run only one instance now.
@@ -6,9 +18,9 @@
 *	Fixed bug that caused uploader to crash when uploadig file with whitespace characters in name.
 *	Also little cosmetic changes in code & now log saves filename instead fullpath&filename
 *
-*2014-03-4	Senketsu <senketsu.dev@gmail.com>
+*2014-03-4	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.2
 *	Added "upload" log , might be useful sometimes
 *
-*2014-03-2	Senketsu <senketsu.dev@gmail.com>
+*2014-03-2	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.1
 *
 *	Moving project to git, no prior changelog

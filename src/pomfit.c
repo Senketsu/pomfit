@@ -23,17 +23,23 @@
 extern char home_dir[64];
 extern char last_upload[64];
 extern GtkWidget *sel_but;
+extern GtkWidget *up_but;
 extern GtkWidget *link_but;
 extern GdkPixbuf *p_icon;
+extern GtkWidget *status_bar;
+gboolean is_uploading = FALSE;
+time_t time2;
 
 void quick_upload_pic(const char *keystring, void *user_data)
 {
-	char scan[200];
-	char file[512];
-	char buff[1024];
-	char output_url[256];
-	char temp_file[256];
+	char scan[64];
+	char file[128];
+	char buff[144];
+	char output_url[64];
+	char temp_file[96];
 	char *pBuff = NULL;
+	char *pGetline = NULL;
+	ssize_t len = 0;
 	sprintf(temp_file ,"%s/curl_output.txt" , home_dir);
 	system("sleep 0.3");	
 	system("cd && scrot -s '%Y-%m-%d_%H%M%S_pomfup.png'");
@@ -74,7 +80,7 @@ void quick_upload_pic(const char *keystring, void *user_data)
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
 		curl_easy_setopt(curl, CURLOPT_READDATA, fd);
 		curl_easy_setopt(curl, CURLOPT_HTTPPOST, post);
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.34.0");
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, POMFIT_USER_AGENT);
 		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
 		curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, output);
@@ -92,11 +98,16 @@ void quick_upload_pic(const char *keystring, void *user_data)
 	if(fd)
 		fclose(fd);
 	output = fopen(temp_file, "r");
-	fscanf(output ,"%s", buff);
-	pBuff=strstr(buff, "url\":\"");
+	if(!output)
+	{
+		perror("failed to open output file");
+		return;
+	}
+	getline(&pGetline, &len, output);
+	pBuff = strstr(pGetline , "url\":\"");
 	pBuff += strlen("url\":\"");
-	pBuff=strtok(pBuff, "\"");
-	sprintf(output_url, "http://a.pomf.se/%s",pBuff);
+	pBuff = strtok(pBuff , "\"");
+	sprintf(output_url ,"http://a.pomf.se/%s" , pBuff);
 	gtk_link_button_set_uri(GTK_LINK_BUTTON(link_but), output_url);
 	gtk_button_set_label(GTK_BUTTON(link_but), output_url);
 	fclose(output);
@@ -105,24 +116,79 @@ void quick_upload_pic(const char *keystring, void *user_data)
 	sprintf(buff , "rm %s" , file);
 	system(buff);
 	pBuff = NULL;
-	notify_me(output_url,"Upload finished");
+	pGetline = NULL;
+	save_to_log(scan , output_url);
+	notify_me(output_url,"Screencap upload finished...");
 	strcpy(last_upload, output_url);
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), 
 							output_url, strlen(output_url));
 }
 
-void curl_upload_file(char *file_path)
+void curl_upload_file(char *file_path , gboolean user_data)
 {
 	char *pBuff = NULL;
 	char *pGetline = NULL;
 	ssize_t len = 0;
+	struct stat file_stat;
+	long long size = 0;
+	long long size_limit = 52428800;
+	double total_time;
 	char *pChoosedFile = NULL;
-	char buff[1024];
-	char temp_file[256];
+	char buff[256] = "";
+	char temp_file[96];
 	char FileName[256];
-	char output_url[256];
+	char output_url[64];
 	sprintf(temp_file ,"%s/curl_output.txt" , home_dir);
 	pChoosedFile = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sel_but));
+	if(is_uploading)
+	{
+		gtk_button_set_relief(GTK_BUTTON(up_but), GTK_RELIEF_HALF);
+		gtk_button_set_label(GTK_BUTTON(up_but), "Upload");
+		return;
+	}/*
+	if(file_path == NULL & !is_uploading)
+	{
+		stat(pChoosedFile, &file_stat);
+		size = file_stat.st_size;
+		if(size>size_limit)
+		{
+			sprintf(buff, "File size: %0.2f MiB (%0.2f MB)\n"
+							"Size limit: 50.00 MiB (52.42 MB)",
+								(float)size/1048576, (float)size/1000000);
+			notify_me(buff,"Error: File size too big !");
+			pChoosedFile=NULL;
+			gtk_file_chooser_unselect_all(GTK_FILE_CHOOSER(sel_but));
+			return;
+		}
+	}*/
+	if(user_data == TRUE)
+	{
+		stat(file_path, &file_stat);
+		size = file_stat.st_size;
+		if(size>size_limit)
+		{
+			sprintf(buff, "File size: %0.2f MiB (%0.2f MB)\n"
+							"Size limit: 50.00 MiB (52.42 MB)",
+								(float)size/1048576, (float)size/1000000);
+			notify_me(buff,"Error: File size too big !");
+			return;
+		}
+	}
+	if(user_data == FALSE && pChoosedFile != NULL)
+	{
+		stat(pChoosedFile, &file_stat);
+		size = file_stat.st_size;
+		if(size>size_limit)
+		{
+			sprintf(buff, "File size: %0.2f MiB (%0.2f MB)\n"
+							"Size limit: 50.00 MiB (52.42 MB)",
+								(float)size/1048576, (float)size/1000000);
+			notify_me(buff,"Error: File size too big !");
+			pChoosedFile=NULL;
+			gtk_file_chooser_unselect_all(GTK_FILE_CHOOSER(sel_but));
+			return;
+		}
+	}
 	CURL *curl;
 	CURLcode res;
 	struct curl_httppost *post = NULL;
@@ -137,6 +203,7 @@ void curl_upload_file(char *file_path)
 		perror("Error opening file to upload");
 		return;
 	}
+	
 	FILE *output;
 	output = fopen(temp_file, "w");
 	if(!output)
@@ -144,6 +211,14 @@ void curl_upload_file(char *file_path)
 		perror("Error opening file to write");
 		return;
 	}
+	if(gtk_button_get_relief(GTK_BUTTON(up_but)) == GTK_RELIEF_NORMAL)
+	{
+		gtk_button_set_relief(GTK_BUTTON(up_but), GTK_RELIEF_NONE);
+		gtk_button_set_label(GTK_BUTTON(up_but), "Cancel");
+	}
+	time2 = time(NULL);
+	gtk_file_chooser_unselect_all(GTK_FILE_CHOOSER(sel_but));
+	is_uploading = TRUE;
 	curl = curl_easy_init();
 	if(curl) 
 	{
@@ -164,10 +239,13 @@ void curl_upload_file(char *file_path)
 				CURLFORM_END);
 		}
 		curl_easy_setopt(curl, CURLOPT_URL, "http://pomf.se/upload.php");
-		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+		curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, up_progress);
 		curl_easy_setopt(curl, CURLOPT_READDATA, fd);
+		curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE,
+                     (curl_off_t)file_stat.st_size);
 		curl_easy_setopt(curl, CURLOPT_HTTPPOST, post);
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.34.0");
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, POMFIT_USER_AGENT);
 		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
 		curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, output);
@@ -176,9 +254,15 @@ void curl_upload_file(char *file_path)
 		{ 
 			fprintf(stderr, "curl_easy_perform() failed: %s\n",
 					curl_easy_strerror(res));
-			perror("Curl failed to upload file");
+			gtk_statusbar_push(GTK_STATUSBAR(status_bar),1,"Upload canceled..");
+			gtk_button_set_relief(GTK_BUTTON(up_but), GTK_RELIEF_NORMAL);
+			gtk_button_set_label(GTK_BUTTON(up_but), "Upload");
+			is_uploading = FALSE;
+			return;
 		}
-		gtk_file_chooser_unselect_all(GTK_FILE_CHOOSER(sel_but));
+		else
+			curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &total_time);
+		
 		curl_formfree(post);
 		curl_easy_cleanup(curl);
 	}
@@ -196,8 +280,6 @@ void curl_upload_file(char *file_path)
 	pBuff += strlen("url\":\"");
 	pBuff = strtok(pBuff , "\"");
 	sprintf(output_url ,"http://a.pomf.se/%s" , pBuff);
-	gtk_link_button_set_uri(GTK_LINK_BUTTON(link_but), output_url);
-	gtk_button_set_label(GTK_BUTTON(link_but), output_url);
 	getline(&pGetline, &len, output);
 	pBuff = strstr(pGetline , "name\":\"");
 	pBuff += strlen("name\":\"");
@@ -210,16 +292,46 @@ void curl_upload_file(char *file_path)
 	pChoosedFile = NULL;
 	pGetline = NULL;
 	file_path = NULL;
+	is_uploading = FALSE;
+	gtk_button_set_relief(GTK_BUTTON(up_but), GTK_RELIEF_NORMAL);
+	gtk_button_set_label(GTK_BUTTON(up_but), "Upload");
+	sprintf(buff, "%.24s%s", FileName , strlen(FileName) > 24 ? "..." : " ");
+	gtk_link_button_set_uri(GTK_LINK_BUTTON(link_but), output_url);
+	gtk_button_set_label(GTK_BUTTON(link_but), buff);
 	save_to_log(FileName , output_url);
-	notify_me(output_url,FileName);
+	notify_me(output_url,buff);
 	strcpy(last_upload, output_url);
+	sprintf(buff, "%2.2f MiB file uploaded in %.0fs",
+								(float)size/1048576, total_time);
+	gtk_statusbar_push (GTK_STATUSBAR(status_bar), 1, buff);
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), 
 							output_url, strlen(output_url));
 }
 
+int up_progress (void* ptr, double TotalToDownload, double NowDownloaded, 
+							double TotalToUpload, double NowUploaded) 
+{
+	if(gtk_button_get_relief(GTK_BUTTON(up_but)) == GTK_RELIEF_HALF)
+		return 1;
+	time_t time1 = time(NULL);
+	char up_status [64];
+	double up_size_left = TotalToUpload - NowUploaded;
+	double fup = NowUploaded / TotalToUpload;
+	double up_speed = NowUploaded/(difftime(time1,time2));
+	double up_estimated = up_size_left/up_speed;
+	sprintf(up_status, "%3.2f%% | %6.2f KiB/s | %5.0fs left", 
+							fup*100, up_speed/1024, up_estimated);
+	gtk_statusbar_push (GTK_STATUSBAR(status_bar), 1, up_status);
+	while (gtk_events_pending ())
+		gtk_main_iteration ();
+	printf("\r");
+	fflush(stdout);
+	
+}
+
 void save_to_log (char *FileName , char *url)
 {
-	char log_path[256];
+	char log_path[96];
 	sprintf(log_path, "%s/Pomfit_url_log.txt", home_dir);
 	FILE *url_log;
 	url_log = fopen(log_path, "a");
@@ -228,10 +340,9 @@ void save_to_log (char *FileName , char *url)
 			perror("Error opening log file\n");
 			return;
 	}
-	fprintf(url_log,"%s - %s\n",FileName ,url);
+	fprintf(url_log,"%s\t- %s\n", url, FileName);
 	fclose(url_log);
 }
-
 
 void notify_me(char *output_url, char *FileName)
 {
@@ -246,13 +357,13 @@ void notify_me(char *output_url, char *FileName)
 
 void open_last_link(const char *keystring, void *user_data)
 {
-	char command[128];
+	char command[96];
 	sprintf(command , "xdg-open %s &", last_upload);
 	system(command);
 }
 
 void take_screenshot(const char *keystring, void *user_data)
 {
-	system("sleep 0.3");	
-	system("scrot -s '%Y-%m-%d_%H%M%S_cap.png' -e 'mv $f ~/Pictures/'");
+	system("sleep 0.3");
+	system("cd && scrot -s '%Y-%m-%d_%H%M%S_cap.png'");
 }

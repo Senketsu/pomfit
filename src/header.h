@@ -21,8 +21,9 @@
 	#define HEADER_H
 	#include <stdio.h>
 	#include <stdlib.h>
+	#include <sys/stat.h>
 	#include <gtk/gtk.h>
-	#include <stdbool.h>
+	#include <time.h>
 	#include <string.h>
 	#include <errno.h>
 	#include <libnotify/notify.h>
