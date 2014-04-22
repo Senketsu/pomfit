@@ -1,6 +1,6 @@
 # **pomfit - Pomf it !**
-## Current version 0.0.4
-### Happy Easter everyone!
+## Current version 0.0.5
+### Now with batch upload !
 ------------------------
 ### About Pomf it !
 Image and file uploader for http://pomf.se written in C using GTK.
@@ -8,6 +8,7 @@ Running in tray, ready to upload anytime through cli, file manager, keybind or t
 
 ### Features:
 ------------
+* Batch Upload
 * Global hotkeys
 * Notifications
 * Upload log
@@ -17,10 +18,10 @@ Running in tray, ready to upload anytime through cli, file manager, keybind or t
 
 ### Global hotkeys:	
 ----------------
-* "Ctrl + Alt + U" - Screencap **U**pload
-* "Ctrl + Alt + B" - **B**rowser (opens last upload link)
-* "Ctrl + Alt + C" - Screen**C**ap
-* "Ctrl + Alt + F" - **F**ile upload
+* "Ctrl + Alt + U" - Screencap Upload (click on window or select area)
+* "Ctrl + Alt + B" - Browser (opens last upload link)
+* "Ctrl + Alt + C" - ScreenCap (click on window or select area)
+* "Ctrl + Alt + F" - File upload (opens selection dialog)
 * You can always easily edit them in the Main source file to fit your taste.
 
 ### Install:
@@ -32,7 +33,7 @@ Running in tray, ready to upload anytime through cli, file manager, keybind or t
 * Assuming you have basic dev tools to build (automake , autoconf , gcc ...)
 
 ### Unofficial Arch Linux Package:
-[Version 0.0.4](http://a.pomf.se/xmkhmu.tar.xz)
+[Version 0.0.5](http://a.pomf.se/yapymy.tar.xz)
 * Install: pacman -U "packagename"
 * If someone feels like making real AUR package, go ahead.
 

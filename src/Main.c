@@ -25,86 +25,170 @@
 #define BIND_CAP "<Ctrl><Alt>c"
 #define BIND_OPEN "<Ctrl><Alt>b"
 
-static GtkStatusIcon *create_tray_icon();
-static void get_home();
-static void quick_file_upload(const char *keystring, void *user_data);
-static char* choose_file(void);
+static GtkStatusIcon *create_tray_icon(GtkWidget *window) ;
+static char* get_home();
+static void get_file_list (void);
+static void choose_file(const char *keystring, void *user_data);
 static GtkWidget* make_dialog (int id);
 static void update_preview (GtkFileChooser *file_chooser, gpointer data);
-static void trayCapUp(GtkMenuItem *item, gpointer user_data);
-static void trayFileUp(GtkMenuItem *item, gpointer user_data);
-static void trayCap(GtkMenuItem *item, gpointer user_data);
-static void trayView(GtkMenuItem *item, gpointer window);
-static void trayExit(GtkMenuItem *item, gpointer user_data);
 static void tray_on_click(GtkStatusIcon *status_icon, gpointer user_data);
 static void tray_on_menu(GtkStatusIcon *status_icon, guint button, 
 							guint activate_time, gpointer user_data);
 
-gboolean hidden = TRUE;
-gboolean first_run = TRUE;
-char home_dir[64];
-char last_upload[64]="http://pomf.se";
-char last_folder[256];
+char HomeDir[64];
+char LastUrl[64]="http://pomf.se";
+char *BatchLinks = NULL;
+char *OpenQueue = NULL;
+char LastFolder[512];
+GtkStatusIcon *tray_icon;
+GdkPixbuf *p_icon;
 GtkWidget *window;
 GtkWidget *sel_but;
 GtkWidget *link_but;
 GtkWidget *up_but;
-GdkPixbuf *p_icon;
 GtkWidget *menu;
 GtkWidget *check_but0;
 GtkWidget *check_but;
 GtkWidget *dialog;
 GtkWidget *status_bar;
 GtkWidget *preview;
-gboolean toggled_gif;
-gboolean destroyed = TRUE;
+gboolean IsGifToggled;
+gboolean IsFirstRun = TRUE;
+gboolean IsUploading = FALSE;
+gboolean IsDestroyed = TRUE;
+gboolean IsQueued = FALSE;
+gboolean Queue = FALSE;
 
-static void quit (GSimpleAction *action, GVariant *parameter,
-						gpointer user_data)
+static void pomfit_main_quit(GApplication *application, gpointer user_data)
 {
-	GApplication *application = user_data;
-	g_application_quit(application);
+	GApplication *application2 = user_data;
+	g_application_quit(application2);
+}
+
+void handle_queue (void)
+{		
+	int j = 0;
+	int i = 0;
+	size_t size = strlen(OpenQueue);
+	char TokQueue[size+1];
+	char CopyQueue[size+1];
+	void *pTokQueue;
+	strcpy(CopyQueue,OpenQueue);
+	strcpy(TokQueue,OpenQueue);
+	pTokQueue = strtok(TokQueue, "$");
+	while (pTokQueue != NULL)
+	{
+		j+=1;
+		pTokQueue = strtok (NULL, "$");
+	}
+	gpointer *pQueuedFiles[j];
+	for(i = 0; i < j ; ++i)
+		pQueuedFiles[i] = NULL;
+	i = 0;
+	pTokQueue = strtok(CopyQueue, "$");
+	while (pTokQueue != NULL)
+	{
+		pQueuedFiles[i] = pTokQueue;
+		i+=1;
+		pTokQueue = strtok (NULL, "$");
+	}
+	Queue = FALSE;
+	curl_upload_file(pQueuedFiles, j);
+	for(i = 0; i < j ; ++i)
+		pQueuedFiles[i] = NULL;
 }
 
 static void open_file(GApplication  *application, GFile **files, gint n_files,
 						const gchar *hint)
 {
-	char *path = g_file_get_path (files[0]);
-	curl_upload_file(path , TRUE);
-	path = NULL;
+	if(IsFirstRun) 
+		gtk_widget_set_no_show_all(GTK_WIDGET(window), TRUE);
+	if(n_files > 1)
+	{
+		int k ;
+		gpointer *pCliFile[n_files];
+		for( k = 0 ; k < n_files ; ++k)
+			pCliFile[k] = (void*)g_file_get_path (files[k]);
+			
+		curl_upload_file(pCliFile, n_files);
+		for( k = 0 ; k < n_files ; ++k)
+			g_free(pCliFile[k]);
+		return;
+	}
+	else
+	{
+		gchar *pQueue;
+		pQueue = g_file_get_path (files[0]);
+		size_t size_file = strlen(pQueue);
+		if(!Queue)
+		{
+			OpenQueue = realloc(OpenQueue,(sizeof(char)*(size_file+2)));
+			sprintf(OpenQueue,"%s$",pQueue);
+		}		
+		else
+		{
+			size_t size = strlen(OpenQueue);
+			
+			OpenQueue = realloc(OpenQueue,(size+size_file+2));
+			sprintf(strchr(OpenQueue, '\0'),"%s$",pQueue);
+		}
+		if(!Queue)
+		{
+			Queue = TRUE;
+			time_t timer = time(NULL);
+			while(time(NULL) < (timer + 5))
+				while (gtk_events_pending ())
+					gtk_main_iteration ();
+			handle_queue();
+			free(OpenQueue);
+			printf("OpenQueue freed\n");
+			pQueue = NULL;
+		}
+	}
+	
 }
 
 static void activate(void)
 {
-	if(first_run)
+	if(IsFirstRun)
 	{
-		first_run = FALSE;
-		return;
+		while (gtk_events_pending ())
+			gtk_main_iteration ();
+		gboolean IsEmbedded;
+		IsEmbedded = gtk_status_icon_is_embedded(GTK_STATUS_ICON(tray_icon));
+		if(!IsEmbedded)
+		{
+			gtk_widget_show(window);
+			gtk_widget_set_no_show_all(GTK_WIDGET(window), FALSE);
+		}
+		else
+			gtk_widget_set_no_show_all(GTK_WIDGET(window), TRUE);
+		IsFirstRun = FALSE;
 	}
-	gtk_widget_show(window);
-	hidden = FALSE;
+	else
+	{
+		gtk_widget_show(window);
+		gtk_widget_set_no_show_all(GTK_WIDGET(window), FALSE);
+	}
 }
 
 static void startup (GtkApplication *pomfit, gpointer user_data)
 {
-	get_home();
-	sprintf(last_folder, "%s", home_dir);
+	strcpy(HomeDir, get_home());
+	strcpy(LastFolder, HomeDir);
 	GError *error = NULL;
-	gchar *pLast_folder_m;
 	GtkWidget *vbox1;
 	GtkWidget *hbox;
 	GtkWidget *quit_but;
-	GtkWidget *preview;
-	GtkStatusIcon *tray_icon;
 	GtkWidget *menuExit , *menuView, *menuCap, *menuCapUp, *menuFileUp;
 	
 	window = gtk_application_window_new(pomfit);
 	gtk_window_set_title(GTK_WINDOW(window), "Pomf it!");
-	g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+	g_signal_connect(window, "destroy", G_CALLBACK(pomfit_main_quit), pomfit);
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 	gtk_window_resize(GTK_WINDOW(window), 320, 100);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-	p_icon = gdk_pixbuf_new_from_file("/usr/local/share/pixmaps/pomfit.png",&error);
+	p_icon=gdk_pixbuf_new_from_file("/usr/local/share/pixmaps/pomfit.png",&error);
 	gtk_window_set_default_icon(GDK_PIXBUF(p_icon));
 	
 	menu = gtk_menu_new();
@@ -114,25 +198,25 @@ static void startup (GtkApplication *pomfit, gpointer user_data)
 	menuView = gtk_menu_item_new_with_label("Show / Hide");
 	menuExit = gtk_menu_item_new_with_label("Exit");
 	g_signal_connect(G_OBJECT(menuCapUp), "activate", 
-						G_CALLBACK(trayCapUp), NULL);
+						G_CALLBACK(quick_upload_pic), NULL);
 	g_signal_connect(G_OBJECT(menuCap), "activate", 
-						G_CALLBACK(trayCap), NULL);
+						G_CALLBACK(take_screenshot), NULL);
 	g_signal_connect(G_OBJECT(menuFileUp), "activate", 
-						G_CALLBACK(trayFileUp), NULL);
+						G_CALLBACK(choose_file), NULL);
 	g_signal_connect(G_OBJECT(menuView), "activate", 
-						G_CALLBACK(trayView), window);
+						G_CALLBACK(tray_on_click), NULL);
 	g_signal_connect(G_OBJECT(menuExit), "activate", 
-						G_CALLBACK(trayExit), pomfit);
+						G_CALLBACK(pomfit_main_quit), pomfit);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuCapUp);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuFileUp);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuCap);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuView);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuExit);
 	gtk_widget_show_all(menu);	
-	tray_icon = create_tray_icon();
+	tray_icon = create_tray_icon(window);
 	
 	keybinder_init();
-	keybinder_bind(BIND_FUP, quick_file_upload, NULL);
+	keybinder_bind(BIND_FUP, choose_file, NULL);
 	keybinder_bind(BIND_PUP, quick_upload_pic, NULL);
 	keybinder_bind(BIND_CAP, take_screenshot, NULL);
 	keybinder_bind(BIND_OPEN, open_last_link, NULL);
@@ -148,19 +232,21 @@ static void startup (GtkApplication *pomfit, gpointer user_data)
 	gtk_box_pack_start(GTK_BOX(hbox),GTK_WIDGET(sel_but),TRUE,TRUE,4);
 	
 	up_but = gtk_button_new_with_label("Upload");
-	g_signal_connect(up_but, "clicked", G_CALLBACK(curl_upload_file), FALSE);
+	g_signal_connect(up_but, "clicked", G_CALLBACK(get_file_list), NULL);
 	gtk_box_pack_start(GTK_BOX(hbox),GTK_WIDGET(up_but),TRUE,TRUE,4);
   
 	link_but =  gtk_link_button_new_with_label("http://pomf.se", "Pomf it !");
-	gtk_box_pack_start(GTK_BOX(vbox1),GTK_WIDGET(link_but),TRUE,TRUE,0);
+	g_signal_connect(link_but,"activate-link",
+								G_CALLBACK(open_all_links),NULL);
+	gtk_box_pack_start(GTK_BOX(vbox1),GTK_WIDGET(link_but),FALSE,TRUE,0);
 	
 	status_bar = gtk_statusbar_new();
-	gtk_box_pack_start(GTK_BOX(vbox1),GTK_WIDGET(status_bar),TRUE,TRUE,0);
+	gtk_box_pack_start(GTK_BOX(vbox1),GTK_WIDGET(status_bar),FALSE,TRUE,0);
 	gtk_statusbar_push (GTK_STATUSBAR(status_bar), 1, POMFIT_VERSION);
 	
 	quit_but = gtk_button_new_with_label("Exit");
-	g_signal_connect(quit_but, "clicked", G_CALLBACK(quit), pomfit);
-	gtk_box_pack_end(GTK_BOX(vbox1),GTK_WIDGET(quit_but),TRUE,TRUE,0);
+	g_signal_connect(quit_but,"clicked",G_CALLBACK(pomfit_main_quit), pomfit);
+	gtk_box_pack_start(GTK_BOX(vbox1),GTK_WIDGET(quit_but),FALSE,FALSE,0);
 
 	gtk_widget_show_all(window);
 	gtk_widget_hide(window);
@@ -181,18 +267,20 @@ int main (int argc,char *argv[])
 	return status;
 }
 
-
-static void tray_on_click(GtkStatusIcon *status_icon, gpointer window)
+static void tray_on_click(GtkStatusIcon *status_icon, gpointer user_data)
 {
-	if(hidden){
+	gboolean NoShow;
+	NoShow = gtk_widget_get_no_show_all(GTK_WIDGET(window));
+	if(NoShow)
+	{
 		gtk_widget_show(window);
-		gtk_window_deiconify(window); 
-		hidden = FALSE;
+		gtk_widget_set_no_show_all(GTK_WIDGET(window), FALSE);
 	}
-	else{
+	else
+	{
 		gtk_widget_hide(window);
-		hidden = TRUE;
-	}
+		gtk_widget_set_no_show_all(GTK_WIDGET(window), TRUE);
+    }
 }
 
 static void tray_on_menu(GtkStatusIcon *status_icon, guint button, 
@@ -203,7 +291,7 @@ static void tray_on_menu(GtkStatusIcon *status_icon, guint button,
 					status_icon, button, activate_time);
 }
 
-static GtkStatusIcon *create_tray_icon() 
+static GtkStatusIcon *create_tray_icon(GtkWidget *window) 
 {
 	GtkStatusIcon *tray_icon;
 	tray_icon = gtk_status_icon_new();
@@ -215,21 +303,6 @@ static GtkStatusIcon *create_tray_icon()
 	gtk_status_icon_set_tooltip_text(tray_icon,POMFIT_VERSION);
 	gtk_status_icon_set_visible(tray_icon, TRUE);
 	return tray_icon;
-}
-
-static void trayExit(GtkMenuItem *item, gpointer user_data) 
-{
-	quit(NULL,NULL,user_data);
-}
-
-static void trayCapUp(GtkMenuItem *item, gpointer user_data) 
-{
-	quick_upload_pic(NULL,NULL);
-}
-
-static void trayCap(GtkMenuItem *item, gpointer user_data) 
-{
-	take_screenshot(NULL,NULL);
 }
 
 static GtkWidget* make_dialog (int id)
@@ -257,20 +330,21 @@ static GtkWidget* make_dialog (int id)
 							"Upload", GTK_RESPONSE_ACCEPT,
 							NULL);
 	if(id == 1)
-	 gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog_new),last_folder);
+	 gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog_new),LastFolder);
 	else
-	 gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog_new),home_dir);
+	 gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog_new),HomeDir);
 	gtk_file_chooser_set_use_preview_label(GTK_FILE_CHOOSER(dialog_new), FALSE);
 	gtk_file_chooser_add_filter (GTK_FILE_CHOOSER(dialog_new),filter_all);
 	gtk_file_chooser_add_filter (GTK_FILE_CHOOSER(dialog_new),filter_img);
+	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog_new), TRUE);
 	gtk_file_chooser_set_preview_widget(GTK_FILE_CHOOSER(dialog_new),
 										GTK_WIDGET(preview));
 	if(id == 1)
 	{
 	 gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(dialog_new),check_but);
-	 gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_but),toggled_gif);
-	 toggled_gif = FALSE;
-	 destroyed = FALSE;
+	 gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_but),IsGifToggled);
+	 IsGifToggled = FALSE;
+	 IsDestroyed = FALSE;
 	}
 	else
 	 gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(dialog_new),check_but0);
@@ -279,124 +353,132 @@ static GtkWidget* make_dialog (int id)
 	return dialog_new;
 }
 
-static char* choose_file(void)
+static void choose_file(const char *keystring, void *user_data)
 {
+	if(IsUploading)
+		return;
 	GtkWidget *dialog_up;
 	dialog_up = make_dialog(1);
-	gchar *pLast_folder;
-	char *filename = NULL;
+	gchar *pLastFolder;
 	if(gtk_dialog_run(GTK_DIALOG (dialog_up))==GTK_RESPONSE_ACCEPT)
 	{
-	  filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog_up));
-	  pLast_folder = gtk_file_chooser_get_current_folder(
+		GSList *pChoosedFiles = NULL;
+		int i ,list;
+		pChoosedFiles=gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog_up));
+		list = g_slist_length(pChoosedFiles);
+		gpointer *pFiles[list];
+		for (i = 0 ; i < list ; ++i)
+			pFiles[i]=NULL;
+		for( i = 0; i < list ; ++i)
+		{
+			pFiles[i] = pChoosedFiles->data;
+			pChoosedFiles = g_slist_next(pChoosedFiles);
+		}
+		g_slist_free_full (pChoosedFiles , g_free);
+		pLastFolder = gtk_file_chooser_get_current_folder(
 						GTK_FILE_CHOOSER(dialog_up));
-	  sprintf(last_folder, "%s" ,pLast_folder);
-	  gtk_widget_destroy(dialog_up);
-	  destroyed = TRUE;
-	  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_but0),toggled_gif);
-	  gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),last_folder);
-	  g_free(pLast_folder);
-	  return filename;
+		sprintf(LastFolder, "%s" ,pLastFolder);
+		gtk_widget_destroy(dialog_up);
+		IsDestroyed = TRUE;
+		while (gtk_events_pending ())
+			gtk_main_iteration ();
+		curl_upload_file(pFiles , list);
+		for (i = 0 ; i < list ; ++i)
+			pFiles[i]=NULL;
 	}
 	else
 	{
-	  pLast_folder = gtk_file_chooser_get_current_folder(
+	  pLastFolder = gtk_file_chooser_get_current_folder(
 							GTK_FILE_CHOOSER(dialog_up));
-	  sprintf(last_folder, "%s" ,pLast_folder);
+	  sprintf(LastFolder, "%s" ,pLastFolder);
 	  gtk_widget_destroy(dialog_up);
-	  destroyed = TRUE;
-	  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_but0),toggled_gif);
-	  gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),last_folder);
-	  g_free(pLast_folder);
-	  return NULL;
+	  IsDestroyed = TRUE;
+	  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_but0),IsGifToggled);
+	  gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),LastFolder);
+	  g_free(pLastFolder);
 	}
 }
 
-static void quick_file_upload(const char *keystring, void *user_data)
+static void get_file_list (void)
 {
-	char* pFileName = NULL;
-	pFileName = choose_file();
-	while (gtk_events_pending ())
-		gtk_main_iteration ();
-	if(pFileName!=NULL)
-		curl_upload_file(pFileName , TRUE);
-	pFileName = NULL;
-}
-
-static void trayFileUp(GtkMenuItem *item, gpointer user_data) 
-{
-	char* pFileName = NULL;
-	pFileName = choose_file();
-	while (gtk_events_pending ())
-		gtk_main_iteration ();
-	if(pFileName!=NULL)
-		curl_upload_file(pFileName , TRUE);
-	pFileName = NULL;
-}
-
-static void trayView(GtkMenuItem *item, gpointer window) 
-{
-	if(hidden)
+	if(IsUploading)
 	{
-		gtk_widget_show(window);
-		gtk_window_deiconify(window); 
-		hidden = FALSE;
+		gtk_button_set_relief(GTK_BUTTON(up_but), GTK_RELIEF_HALF);
+		gtk_button_set_label(GTK_BUTTON(up_but), "Upload");
+		return;
 	}
-	else
+	GSList *pChoosedFiles = NULL;
+	gchar *pLastFolder;
+	int i ,list;
+	pChoosedFiles = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog));
+	list = g_slist_length(pChoosedFiles);
+	gpointer *pFiles[list];
+	for (i = 0 ; i < list ; ++i)
+		pFiles[i]=NULL;
+	for( i = 0; i < list ; ++i)
 	{
-		gtk_widget_hide(window);
-		hidden = TRUE;
+		pFiles[i] = pChoosedFiles->data;
+		pChoosedFiles = g_slist_next(pChoosedFiles);
 	}
+	g_slist_free_full (pChoosedFiles , g_free);
+	pLastFolder = gtk_file_chooser_get_current_folder(
+						GTK_FILE_CHOOSER(dialog));
+	sprintf(LastFolder, "%s" ,pLastFolder);
+	gtk_file_chooser_unselect_all(GTK_FILE_CHOOSER(dialog));
+	gtk_file_chooser_unselect_all(GTK_FILE_CHOOSER(sel_but));
+	curl_upload_file(pFiles , list);
+	for (i = 0 ; i < list ; ++i)
+		pFiles[i]=NULL;
+
 }
 
-static void get_home()
+static char* get_home()
 {
-	char *home = NULL;
-	home = getenv("HOME");
-	strcpy(home_dir, home);
-	home = NULL; 
+	char *pHome = NULL;
+	pHome = getenv("HOME");
+	return pHome;
 }
 
 static void update_preview (GtkFileChooser *file_chooser, gpointer data)
 {
 	GtkWidget *preview;
-	gchar *filename;
+	gchar *FileName;
 	GdkPixbuf *pixbuf;
 	GdkPixbufAnimation *pixbuf_anim;
-	gboolean is_static;
-	gboolean have_preview;
+	gboolean IsStatic;
+	gboolean HavePreview;
 
 	preview = GTK_WIDGET (data);
-	filename = gtk_file_chooser_get_preview_filename (file_chooser);
-	if(!filename)
+	FileName = gtk_file_chooser_get_preview_filename (file_chooser);
+	if(!FileName)
 		return;
-	pixbuf_anim = gdk_pixbuf_animation_new_from_file(filename, NULL);
+	pixbuf_anim = gdk_pixbuf_animation_new_from_file(FileName, NULL);
 	if(pixbuf_anim)
-		is_static = gdk_pixbuf_animation_is_static_image (pixbuf_anim);
-	if(is_static)
+		IsStatic = gdk_pixbuf_animation_is_static_image (pixbuf_anim);
+	if(IsStatic)
 	{
-		pixbuf = gdk_pixbuf_new_from_file_at_size (filename, 192, 192, NULL);
+		pixbuf = gdk_pixbuf_new_from_file_at_size (FileName, 192, 192, NULL);
 		gtk_image_set_from_pixbuf (GTK_IMAGE (preview), pixbuf);
 	}
 	else
 	{
-	 if(!destroyed)
-		toggled_gif=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_but));
-	 if(destroyed)
-		toggled_gif=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_but0));
-	 if(toggled_gif)
+	 if(!IsDestroyed)
+		IsGifToggled=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_but));
+	 if(IsDestroyed)
+		IsGifToggled=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_but0));
+	 if(IsGifToggled)
 		gtk_image_set_from_animation (GTK_IMAGE (preview), pixbuf_anim);
 	 else
 	 {
-		pixbuf = gdk_pixbuf_new_from_file_at_size (filename, 192, 192, NULL);
+		pixbuf = gdk_pixbuf_new_from_file_at_size (FileName, 192, 192, NULL);
 		gtk_image_set_from_pixbuf (GTK_IMAGE (preview), pixbuf);
 	 }
 	}
-	have_preview = (pixbuf != NULL || pixbuf_anim != NULL);
-	g_free (filename);
+	HavePreview = (pixbuf != NULL || pixbuf_anim != NULL);
+	g_free (FileName);
 	if (pixbuf)
 		g_object_unref (pixbuf);
 	if (pixbuf_anim)
 		g_object_unref (pixbuf_anim);
-	gtk_file_chooser_set_preview_widget_active (file_chooser, have_preview);
+	gtk_file_chooser_set_preview_widget_active (file_chooser, HavePreview);
 }

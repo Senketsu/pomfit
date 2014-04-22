@@ -1,3 +1,7 @@
+*2014-04-22	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.5
+*	Batch upload support & related changes
+*	Little source code formatting for better readability (hopefully)
+*	Some minor changes
 *2014-04-18	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.4
 *** Happy Easter everyone! ***
 *	Added - File size limit check
