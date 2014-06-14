@@ -34,7 +34,7 @@ void quick_upload_pic(const char *keystring, void *user_data)
 {
 	char FileName[32];
 	char FilePath[96];
-	char buff[128];
+	char buff[128] = "";
 	char UpFileUrl[40];
 	char OutputFilePath[96];
 	char *pBuff = NULL;
@@ -109,6 +109,15 @@ void quick_upload_pic(const char *keystring, void *user_data)
 	pBuff = strstr(pGetline , "url\":\"");
 	pBuff += strlen("url\":\"");
 	pBuff = strtok(pBuff , "\"");
+	if(strstr(pBuff,"\\") != NULL )
+	{
+		int i;
+		for(i = 0; i < strlen(pBuff) ; ++i)
+		{
+			if(pBuff[i] == '\\')
+				pBuff[i] = '/';
+		}
+	}
 	sprintf(UpFileUrl ,"http://a.pomf.se/%s" , pBuff);
 	fclose(pOutputFile);
 	sprintf(buff , "rm %s" , OutputFilePath);
@@ -118,8 +127,6 @@ void quick_upload_pic(const char *keystring, void *user_data)
 	pBuff = NULL;
 	pGetline = NULL;
 	save_to_log(FileName , UpFileUrl);
-	free(BatchLinks);
-	BatchLinks = (char*)realloc(BatchLinks,(sizeof(UpFileUrl)));
 	strcpy(BatchLinks, UpFileUrl);
 	gtk_link_button_set_uri(GTK_LINK_BUTTON(link_but), BatchLinks);
 	gtk_button_set_label(GTK_BUTTON(link_but), FileName);
@@ -303,6 +310,15 @@ void curl_upload_file(gpointer **apFilesPaths , int ListCount)
 		pBuff = strstr(pGetline , "url\":\"");
 		pBuff += strlen("url\":\"");
 		pBuff = strtok(pBuff , "\"");
+		if(strstr(pBuff,"\\") != NULL )
+		{
+			int i;
+			for(i = 0; i < strlen(pBuff) ; ++i)
+			{
+				if(pBuff[i] == '\\')
+					pBuff[i] = '/';
+			}
+		}
 		sprintf(UpFileUrl ,"http://a.pomf.se/%s" , pBuff);
 		getline(&pGetline, &len, pOutputFile);
 		pBuff = strstr(pGetline , "name\":\"");
@@ -335,6 +351,15 @@ void curl_upload_file(gpointer **apFilesPaths , int ListCount)
 			pBuff = strstr(pGetline , "url\":\"");
 			pBuff += strlen("url\":\"");
 			pBuff = strtok(pBuff , "\"");
+			if(strstr(pBuff,"\\") != NULL )
+			{
+				int i;
+				for(i = 0; i < strlen(pBuff) ; ++i)
+				{
+					if(pBuff[i] == '\\')
+						pBuff[i] = '/';
+				}
+			}
 			sprintf(UpFileUrl ,"http://a.pomf.se/%s" , pBuff);
 			pBuff = strstr(pFileName , "name\":\"");
 			pBuff += strlen("name\":\"");

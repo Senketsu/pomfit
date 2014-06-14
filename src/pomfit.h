@@ -19,8 +19,8 @@
 
 #ifndef POMFIT_H
 	#define POMFIT_H
-	#define POMFIT_USER_AGENT "pomfit/0.0.5"
-	#define POMFIT_VERSION "\"Pomf it !\" Uploader version 0.0.5"
+	#define POMFIT_USER_AGENT "pomfit/0.0.5b"
+	#define POMFIT_VERSION "\"Pomf it !\" Uploader version 0.0.5b"
 	void quick_upload_pic(const char *keystring, void *user_data);
 	void curl_upload_file(gpointer **apFilesPaths , int ListCount);
 	void notify_me(char *output_url, char *FileName);
