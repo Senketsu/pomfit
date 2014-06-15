@@ -28,6 +28,7 @@ extern GtkWidget *up_but;
 extern GtkWidget *link_but;
 extern GtkWidget *status_bar;
 extern gboolean IsUploading;
+extern gboolean IsBatchLinks;
 time_t TimeUpStarted;
 
 void quick_upload_pic(const char *keystring, void *user_data)
@@ -110,14 +111,7 @@ void quick_upload_pic(const char *keystring, void *user_data)
 	pBuff += strlen("url\":\"");
 	pBuff = strtok(pBuff , "\"");
 	if(strstr(pBuff,"\\") != NULL )
-	{
-		int i;
-		for(i = 0; i < strlen(pBuff) ; ++i)
-		{
-			if(pBuff[i] == '\\')
-				pBuff[i] = '/';
-		}
-	}
+		remove_char(pBuff, '\\');
 	sprintf(UpFileUrl ,"http://a.pomf.se/%s" , pBuff);
 	fclose(pOutputFile);
 	sprintf(buff , "rm %s" , OutputFilePath);
@@ -127,8 +121,10 @@ void quick_upload_pic(const char *keystring, void *user_data)
 	pBuff = NULL;
 	pGetline = NULL;
 	save_to_log(FileName , UpFileUrl);
-	strcpy(BatchLinks, UpFileUrl);
-	gtk_link_button_set_uri(GTK_LINK_BUTTON(link_but), BatchLinks);
+	if(BatchLinks != NULL)
+		free(BatchLinks);
+	IsBatchLinks = FALSE;
+	gtk_link_button_set_uri(GTK_LINK_BUTTON(link_but), UpFileUrl);
 	gtk_button_set_label(GTK_BUTTON(link_but), FileName);
 	sprintf(buff, "%s\n%s",FileName ,UpFileUrl);
 	gtk_widget_set_tooltip_text(link_but, buff);
@@ -303,22 +299,15 @@ void curl_upload_file(gpointer **apFilesPaths , int ListCount)
 		perror("Couldn't read output file");
 		return;
 	}
-	BatchLinks = realloc(BatchLinks,(UpDone*sizeof(UpFileUrl)));
 	if(UpDone == 1)
 	{
+		IsBatchLinks = FALSE;
 		getline(&pGetline, &len, pOutputFile);
 		pBuff = strstr(pGetline , "url\":\"");
 		pBuff += strlen("url\":\"");
 		pBuff = strtok(pBuff , "\"");
 		if(strstr(pBuff,"\\") != NULL )
-		{
-			int i;
-			for(i = 0; i < strlen(pBuff) ; ++i)
-			{
-				if(pBuff[i] == '\\')
-					pBuff[i] = '/';
-			}
-		}
+				remove_char(pBuff, '\\');
 		sprintf(UpFileUrl ,"http://a.pomf.se/%s" , pBuff);
 		getline(&pGetline, &len, pOutputFile);
 		pBuff = strstr(pGetline , "name\":\"");
@@ -331,8 +320,7 @@ void curl_upload_file(gpointer **apFilesPaths , int ListCount)
 		gtk_button_set_label(GTK_BUTTON(link_but), buff);
 		notify_me(UpFileUrl,buff);
 		strcpy(LastUrl, UpFileUrl);
-		sprintf(BatchLinks,"%s ", UpFileUrl);
-		gtk_link_button_set_uri(GTK_LINK_BUTTON(link_but), BatchLinks);
+		gtk_link_button_set_uri(GTK_LINK_BUTTON(link_but), UpFileUrl);
 		sprintf(buff, "%2.2f MB file uploaded in %.0fs",
 								(float)FileSize/1000000, TotalTime);
 		gtk_statusbar_push (GTK_STATUSBAR(status_bar), 1, buff);
@@ -343,6 +331,8 @@ void curl_upload_file(gpointer **apFilesPaths , int ListCount)
 	}
 	else
 	{
+		IsBatchLinks = TRUE;
+		BatchLinks = realloc(BatchLinks,(UpDone*sizeof(UpFileUrl)));
 		for(i = 0 ; i < UpDone; ++i)
 		{
 			void *pFileName = NULL;
@@ -352,14 +342,7 @@ void curl_upload_file(gpointer **apFilesPaths , int ListCount)
 			pBuff += strlen("url\":\"");
 			pBuff = strtok(pBuff , "\"");
 			if(strstr(pBuff,"\\") != NULL )
-			{
-				int i;
-				for(i = 0; i < strlen(pBuff) ; ++i)
-				{
-					if(pBuff[i] == '\\')
-						pBuff[i] = '/';
-				}
-			}
+				remove_char(pBuff, '\\');
 			sprintf(UpFileUrl ,"http://a.pomf.se/%s" , pBuff);
 			pBuff = strstr(pFileName , "name\":\"");
 			pBuff += strlen("name\":\"");
@@ -448,28 +431,59 @@ void notify_me(char *output_url, char *FileName)
 
 void open_last_link(const char *keystring, void *user_data)
 {
-	char command[96];
-	sprintf(command , "xdg-open %s &", LastUrl);
-	system(command);
+	if(IsBatchLinks)
+	{
+		open_all_links(NULL,NULL);
+		return;
+	}
+	else
+	{
+		GdkScreen *DefScreen = gdk_screen_get_default();
+		gtk_show_uri(DefScreen, LastUrl, GDK_CURRENT_TIME, NULL);
+	}
 }
 
 gboolean open_all_links(GtkLinkButton *button, gpointer user_data)
 {
-	GdkScreen *DefScreen = gdk_screen_get_default();
-	char *pTok;
-	char buffer[strlen(BatchLinks)+1];
-	strcpy(buffer,BatchLinks);
-	pTok = strtok(buffer, " ");
-	while (pTok != NULL)
+	if(IsBatchLinks)
 	{
-		gtk_show_uri(DefScreen, pTok, GDK_CURRENT_TIME, NULL);
-		pTok = strtok (NULL, " ");
+		GdkScreen *DefScreen = gdk_screen_get_default();
+		char *pTok;
+		char buffer[strlen(BatchLinks)+1];
+		strcpy(buffer,BatchLinks);
+		pTok = strtok(buffer, " ");
+		while (pTok != NULL)
+		{
+			gtk_show_uri(DefScreen, pTok, GDK_CURRENT_TIME, NULL);
+			pTok = strtok (NULL, " ");
+		}
+		return TRUE;
 	}
-	return TRUE;
+	else
+	{
+		open_last_link(NULL,NULL);
+		return TRUE;
+	}
+}
+
+void open_acc_page(const char *keystring, void *user_data)
+{
+	GdkScreen *DefScreen = gdk_screen_get_default();
+	gtk_show_uri(DefScreen, "http://pomf.se/user/", GDK_CURRENT_TIME, NULL);
 }
 
 void take_screenshot(const char *keystring, void *user_data)
 {
 	system("sleep 0.3");
 	system("cd && scrot -s '%Y-%m-%d_%H%M%S_cap.png'");
+}
+
+void remove_char(char *str, char garbage) 
+{
+    char *src, *dst;
+    for (src = dst = str; *src != '\0'; src++) {
+        *dst = *src;
+        if (*dst != garbage) dst++;
+    }
+    *dst = '\0';
 }

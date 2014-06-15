@@ -58,6 +58,7 @@ gboolean IsUploading = FALSE;
 gboolean IsDestroyed = TRUE;
 gboolean IsQueued = FALSE;
 gboolean Queue = FALSE;
+gboolean IsBatchLinks = FALSE;
 
 static void pomfit_main_quit(GApplication *application, gpointer user_data)
 {
@@ -181,6 +182,7 @@ static void startup (GtkApplication *pomfit, gpointer user_data)
 	GtkWidget *hbox;
 	GtkWidget *quit_but;
 	GtkWidget *menuExit , *menuView, *menuCap, *menuCapUp, *menuFileUp;
+	GtkWidget *menuSep1, *menuSep2, *menuAcc, *menuOpen;
 	
 	window = gtk_application_window_new(pomfit);
 	gtk_window_set_title(GTK_WINDOW(window), "Pomf it!");
@@ -192,24 +194,36 @@ static void startup (GtkApplication *pomfit, gpointer user_data)
 	gtk_window_set_default_icon(GDK_PIXBUF(p_icon));
 	
 	menu = gtk_menu_new();
-	menuCapUp = gtk_menu_item_new_with_label("Upload Screencap");
-	menuFileUp = gtk_menu_item_new_with_label("Upload File");
-	menuCap = gtk_menu_item_new_with_label("Screencap");
+	menuAcc = gtk_menu_item_new_with_label("My account");
+	menuSep1 = gtk_separator_menu_item_new ();
+	menuCapUp = gtk_menu_item_new_with_label("Upload Screencap\t"BIND_PUP);
+	menuFileUp = gtk_menu_item_new_with_label("Upload File\t\t"BIND_FUP);
+	menuCap = gtk_menu_item_new_with_label("Screencap\t\t"BIND_CAP);
+	menuSep2 = gtk_separator_menu_item_new ();
+	menuOpen = gtk_menu_item_new_with_label("Open Last Link(s)\t"BIND_OPEN);
 	menuView = gtk_menu_item_new_with_label("Show / Hide");
 	menuExit = gtk_menu_item_new_with_label("Exit");
+	g_signal_connect(G_OBJECT(menuAcc), "activate", 
+						G_CALLBACK(open_acc_page), NULL);
 	g_signal_connect(G_OBJECT(menuCapUp), "activate", 
 						G_CALLBACK(quick_upload_pic), NULL);
 	g_signal_connect(G_OBJECT(menuCap), "activate", 
 						G_CALLBACK(take_screenshot), NULL);
 	g_signal_connect(G_OBJECT(menuFileUp), "activate", 
 						G_CALLBACK(choose_file), NULL);
+	g_signal_connect(G_OBJECT(menuOpen), "activate", 
+						G_CALLBACK(open_last_link), NULL);
 	g_signal_connect(G_OBJECT(menuView), "activate", 
 						G_CALLBACK(tray_on_click), NULL);
 	g_signal_connect(G_OBJECT(menuExit), "activate", 
 						G_CALLBACK(pomfit_main_quit), pomfit);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuAcc);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuSep1);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuCapUp);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuFileUp);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuCap);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuSep2);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuOpen);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuView);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuExit);
 	gtk_widget_show_all(menu);	

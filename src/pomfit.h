@@ -19,8 +19,8 @@
 
 #ifndef POMFIT_H
 	#define POMFIT_H
-	#define POMFIT_USER_AGENT "pomfit/0.0.5b"
-	#define POMFIT_VERSION "\"Pomf it !\" Uploader version 0.0.5b"
+	#define POMFIT_USER_AGENT "pomfit/0.0.5c"
+	#define POMFIT_VERSION "\"Pomf it !\" Uploader version 0.0.5c"
 	void quick_upload_pic(const char *keystring, void *user_data);
 	void curl_upload_file(gpointer **apFilesPaths , int ListCount);
 	void notify_me(char *output_url, char *FileName);
@@ -28,6 +28,8 @@
 	void open_last_link(const char *keystring, void *user_data);
 	gboolean open_all_links(GtkLinkButton *button, gpointer user_data);
 	void save_to_log (char* FileName , char* url);
+	void open_acc_page(const char *keystring, void *user_data);
+	void remove_char(char *str, char garbage);
 	int up_progress (void* ptr, double TotalToDownload, double NowDownloaded, 
 							double TotalToUpload, double NowUploaded);
 #endif
