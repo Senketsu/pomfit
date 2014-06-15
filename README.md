@@ -39,7 +39,7 @@ Running in tray, ready to upload anytime through cli, file manager, keybind or t
 * Assuming you have basic dev tools to build (automake , autoconf , gcc ...)
 
 ### Unofficial Arch Linux Package:
-[Version 0.0.5c](http://a.pomf.se/1/pusypv.tar.xz)
+[Version 0.0.5c](http://a.pomf.se/pusypv.tar.xz)
 * Install: pacman -U "packagename"
 * If someone feels like making real AUR package, go ahead.
 
