@@ -21,14 +21,19 @@
 #include "pomfit.h"
 
 extern char HomeDir[64];
+extern char ConfDir[128];
+extern char CookieFile[160];
 extern char LastUrl[64];
+extern char LoggedEmail[256];
 extern char *BatchLinks;
 extern GdkPixbuf *p_icon;
 extern GtkWidget *up_but;
 extern GtkWidget *link_but;
 extern GtkWidget *status_bar;
+extern GtkWidget *entry_pass, *entry_email;
 extern gboolean IsUploading;
 extern gboolean IsBatchLinks;
+extern gboolean IsLoggedIn;
 time_t TimeUpStarted;
 
 void quick_upload_pic(const char *keystring, void *user_data)
@@ -41,7 +46,7 @@ void quick_upload_pic(const char *keystring, void *user_data)
 	char *pBuff = NULL;
 	char *pGetline = NULL;
 	size_t len = 0;
-	sprintf(OutputFilePath ,"%s/curl_output.txt" , HomeDir);
+	sprintf(OutputFilePath ,"%s/curl_output.txt" , ConfDir);
 	system("sleep 0.3");	
 	system("cd && scrot -s '%Y-%m-%d_%H%M%S_pomfup.png'");
 	FILE *fp = popen("cd && ls -Art *pomfup.png | tail -n 1","r");
@@ -87,6 +92,7 @@ void quick_upload_pic(const char *keystring, void *user_data)
 		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
 		curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, pOutputFile);
+		curl_easy_setopt(curl, CURLOPT_COOKIEFILE, CookieFile);
 		res = curl_easy_perform(curl);
 		if(res != CURLE_OK)
 		{ 
@@ -152,7 +158,7 @@ void curl_upload_file(gpointer **apFilesPaths , int ListCount)
 	char OutputFilePath[96];
 	char FileName[256];
 	char UpFileUrl[64];
-	sprintf(OutputFilePath ,"%s/curl_output.txt" , HomeDir);
+	sprintf(OutputFilePath ,"%s/curl_output.txt" , ConfDir);
 	int i,Skipping = 0;
 	int UpDone = 0;
 	int Skip[20] = { 0 };
@@ -253,6 +259,7 @@ void curl_upload_file(gpointer **apFilesPaths , int ListCount)
 			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
 			curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, pOutputFile);
+			curl_easy_setopt(curl, CURLOPT_COOKIEFILE, CookieFile);
 			res = curl_easy_perform(curl);
 			if(res != CURLE_OK)
 			{ 
@@ -486,4 +493,181 @@ void remove_char(char *str, char garbage)
         if (*dst != garbage) dst++;
     }
     *dst = '\0';
+}
+
+
+void curl_login(GtkWidget *widget,gpointer   data)
+{
+	const gchar *pLine_email;
+	const gchar *pLine_pass;
+	char PostData[512];
+	char Buffer[256];
+	char LoginOutputFile[256];
+	sprintf(LoginOutputFile ,"%s/login_output" , ConfDir);
+	
+	pLine_email = gtk_entry_get_text(GTK_ENTRY(entry_email));
+	pLine_pass = gtk_entry_get_text(GTK_ENTRY(entry_pass));
+	sprintf(PostData,"email=%s&pass=%s",pLine_email,pLine_pass);
+	strcpy(LoggedEmail,pLine_email);
+	pLine_email = NULL;
+	pLine_pass = NULL;
+	
+	
+	CURL *curl;
+	CURLcode res;
+	
+	FILE *pOutputFile;
+	pOutputFile = fopen(LoginOutputFile, "a");
+	if(!pOutputFile)
+	{
+		perror("Couldn't create output file");
+		return;
+	}
+	curl = curl_easy_init();
+	if(curl) {
+	curl_easy_setopt(curl, CURLOPT_URL, "http://pomf.se/user/includes/api.php?do=login");
+	curl_easy_setopt(curl, CURLOPT_USERAGENT,POMFIT_USER_AGENT);
+	curl_easy_setopt(curl, CURLOPT_POST, TRUE);
+	curl_easy_setopt(curl, CURLOPT_AUTOREFERER, 1 );
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1); 
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, PostData);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, pOutputFile);
+	curl_easy_setopt(curl, CURLOPT_COOKIESESSION, TRUE);
+	curl_easy_setopt(curl, CURLOPT_COOKIEJAR, CookieFile);
+	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, CookieFile);
+	
+	res = curl_easy_perform(curl);
+	if(res != CURLE_OK)
+	{ 
+		fprintf(stderr, "curl_easy_perform() failed: %s\n",
+					curl_easy_strerror(res));
+		return;
+	}
+	curl_easy_cleanup(curl);
+	}
+	fclose(pOutputFile);
+	pOutputFile = fopen(LoginOutputFile, "r");
+	if(!pOutputFile)
+	{
+		perror("Couldn't create output file");
+		return;
+	}
+	char *line = NULL;
+	size_t len = 0;
+	while (getline(&line, &len, pOutputFile) != -1) 
+	{
+		if(strstr(line, "Moe Panel") != NULL) {
+			IsLoggedIn = TRUE;
+			login_handle();
+			break;
+		}
+		else {
+			IsLoggedIn = FALSE;
+			gtk_entry_set_text(GTK_ENTRY(entry_email), "Invalid Login");
+			gtk_entry_set_text(GTK_ENTRY(entry_pass), "");
+		}
+	}
+	fclose(pOutputFile);
+
+	sprintf(Buffer,"rm %s",LoginOutputFile);
+	system(Buffer);
+}
+
+void curl_logout(GtkWidget *widget,gpointer   data)
+{
+	
+	char RMCookie[256];
+	CURL *curl;
+	CURLcode res;
+	
+	curl = curl_easy_init();
+	if(curl) {
+	curl_easy_setopt(curl, CURLOPT_URL, "http://pomf.se/user/includes/api.php?do=logout");
+	curl_easy_setopt(curl, CURLOPT_USERAGENT,POMFIT_USER_AGENT);
+	curl_easy_setopt(curl, CURLOPT_AUTOREFERER, 1 );
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+	curl_easy_setopt(curl, CURLOPT_COOKIESESSION, TRUE);
+	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, CookieFile);
+	
+	res = curl_easy_perform(curl);
+	if(res != CURLE_OK)
+	{ 
+		fprintf(stderr, "curl_easy_perform() failed: %s\n",
+					curl_easy_strerror(res));
+		return;
+	}
+	curl_easy_cleanup(curl);
+	}
+	
+	IsLoggedIn = FALSE;
+	login_handle();
+	sprintf(RMCookie,"rm %s",CookieFile);
+	system(RMCookie);
+}
+
+void pomfit_mkdir(void)
+{
+	char string_mkdir[256];
+	gboolean test_dir = chdir(ConfDir);
+	chdir(HomeDir);
+	if(test_dir != 0)
+	{
+		sprintf(string_mkdir, "mkdir %s",ConfDir);
+		system(string_mkdir);
+	}
+}
+
+void pomfit_save_state(void)
+{
+	char ConfFile [256];
+	sprintf(ConfFile ,"%s/account_state" ,ConfDir);
+	FILE *config = fopen(ConfFile , "w");
+	if (config == NULL) 
+	{
+		perror("Couldn't create file\n");
+		return;
+	}
+	if(IsLoggedIn)
+	{
+		fprintf(config, "IsLoggedIn=TRUE\n");
+		fprintf(config, "Email=%s\n",LoggedEmail);
+		
+	}
+	else
+	{
+		fprintf(config, "IsLoggedIn=FALSE\n");
+	}
+	fclose(config);
+}
+
+void pomfit_load_state(void)
+{
+	
+	char *line = NULL;
+	size_t len = 0;
+	char *strtok_buffer = NULL;
+	char ConfFile [256];
+	sprintf(ConfFile ,"%s/account_state" ,ConfDir);
+	FILE *config = fopen(ConfFile , "r");
+	if (config == NULL) 
+	{
+		perror("Couldn't read file\n");
+		return;
+	}
+	while (getline(&line, &len, config) != -1) 
+	{
+		if (strncmp(line, "IsLoggedIn=", strlen("IsLoggedIn=")) == 0) {
+			strtok_r(line, "\n", &strtok_buffer);
+			if (strstr(line, "TRUE") != NULL) 
+				IsLoggedIn=TRUE;
+			else
+				IsLoggedIn=FALSE;
+		}
+		else if (strncmp(line, "Email=", strlen("Email=")) == 0) 
+		{
+			strtok_r(line, "\n", &strtok_buffer);
+			strcpy(LoggedEmail, line + strlen("Email="));
+		}
+	}
+	fclose(config);
 }

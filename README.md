@@ -1,12 +1,13 @@
 # **pomfit - Pomf it !**
-## Current version 0.0.5c ~Crystal~
-### Now with batch upload !
+## Current version 0.0.6 ~Cube~
+### Now with user accounts support !
 ------------------------
-### Note: 0.0.5c
-* Properly fixes a link issue with recent (temporary?)storage changes.
-* Fixing last 'bugfix' & some minor changes
-* Recommended update
-* Thats all cayooties. Sorry about that you need to upgrade again. (sick & sleep deprived ftw)
+### Note: 0.0.6
+* Added user accounts support.
+* You can now login through pomfit to have your uploads linked to your account.
+* Another update probably, when file expirations will be implemented.(unless bugs appear)
+* Recommended update.
+* Thats all cayooties.
 
 ### About Pomf it !
 Image and file uploader for http://pomf.se written in C using GTK.
@@ -14,6 +15,7 @@ Running in tray, ready to upload anytime through cli, file manager, keybind or t
 
 ### Features:
 ------------
+* User Accounts
 * Batch Upload
 * Global hotkeys
 * Notifications
@@ -39,7 +41,7 @@ Running in tray, ready to upload anytime through cli, file manager, keybind or t
 * Assuming you have basic dev tools to build (automake , autoconf , gcc ...)
 
 ### Unofficial Arch Linux Package:
-[Version 0.0.5c](http://a.pomf.se/pusypv.tar.xz)
+[Version 0.0.6](http://a.pomf.se/rlmctt.tar.xz)
 * Install: pacman -U "packagename"
 * If someone feels like making real AUR package, go ahead.
 

@@ -27,6 +27,7 @@
 
 static GtkStatusIcon *create_tray_icon(GtkWidget *window) ;
 static char* get_home();
+void login_handle(void);
 static void get_file_list (void);
 static void choose_file(const char *keystring, void *user_data);
 static GtkWidget* make_dialog (int id);
@@ -36,7 +37,10 @@ static void tray_on_menu(GtkStatusIcon *status_icon, guint button,
 							guint activate_time, gpointer user_data);
 
 char HomeDir[64];
+char ConfDir[128];
+char CookieFile[160];
 char LastUrl[64]="http://pomf.se";
+char LoggedEmail[256] = "";
 char *BatchLinks = NULL;
 char *OpenQueue = NULL;
 char LastFolder[512];
@@ -52,6 +56,12 @@ GtkWidget *check_but;
 GtkWidget *dialog;
 GtkWidget *status_bar;
 GtkWidget *preview;
+
+GtkWidget *login_but , *logout_but;
+GtkWidget *entry_pass, *entry_email;
+GtkWidget *vbox1, *vbox3, *label_pass, *label_email;
+GtkWidget *hbox_log1, *hbox_log2, *label_session;
+
 gboolean IsGifToggled;
 gboolean IsFirstRun = TRUE;
 gboolean IsUploading = FALSE;
@@ -59,9 +69,13 @@ gboolean IsDestroyed = TRUE;
 gboolean IsQueued = FALSE;
 gboolean Queue = FALSE;
 gboolean IsBatchLinks = FALSE;
+gboolean IsLoggedIn = FALSE;
 
 static void pomfit_main_quit(GApplication *application, gpointer user_data)
 {
+	pomfit_save_state();
+	
+	
 	GApplication *application2 = user_data;
 	g_application_quit(application2);
 }
@@ -177,8 +191,14 @@ static void startup (GtkApplication *pomfit, gpointer user_data)
 {
 	strcpy(HomeDir, get_home());
 	strcpy(LastFolder, HomeDir);
+	sprintf(ConfDir,"%s/.config/Pomfit",HomeDir);
+	pomfit_mkdir();
+	sprintf(CookieFile,"%s/pomfit_phpsessid",ConfDir);
+	pomfit_load_state();
+	
 	GError *error = NULL;
-	GtkWidget *vbox1;
+	GtkWidget *vbox_main, *nb_main, *label_login, *label_upload;
+	GtkWidget *vbox2;
 	GtkWidget *hbox;
 	GtkWidget *quit_but;
 	GtkWidget *menuExit , *menuView, *menuCap, *menuCapUp, *menuFileUp;
@@ -235,11 +255,32 @@ static void startup (GtkApplication *pomfit, gpointer user_data)
 	keybinder_bind(BIND_CAP, take_screenshot, NULL);
 	keybinder_bind(BIND_OPEN, open_last_link, NULL);
 	
-	vbox1 = gtk_box_new(GTK_ORIENTATION_VERTICAL , 0);
-	gtk_container_add(GTK_CONTAINER(window), vbox1);
 	
+	vbox_main = gtk_box_new(GTK_ORIENTATION_VERTICAL , 4);
+	gtk_container_add(GTK_CONTAINER(window), vbox_main);
+	nb_main = gtk_notebook_new();
+	gtk_container_add(GTK_CONTAINER(vbox_main),nb_main);
+	
+	vbox1 = gtk_box_new(GTK_ORIENTATION_VERTICAL , 0);
+	gtk_container_add(GTK_CONTAINER(nb_main), vbox1); 
+	label_login = gtk_label_new("Login");
+	g_object_set(G_OBJECT(label_login), "can-focus", FALSE, NULL);
+	gtk_notebook_set_tab_label(GTK_NOTEBOOK(nb_main),
+		gtk_notebook_get_nth_page(GTK_NOTEBOOK(nb_main), 0),label_login);
+	
+	
+	vbox2 = gtk_box_new(GTK_ORIENTATION_VERTICAL , 0);
+	gtk_container_add(GTK_CONTAINER(nb_main), vbox2);
+	label_upload = gtk_label_new("Upload");
+	g_object_set(G_OBJECT(label_upload), "can-focus", FALSE, NULL);
+	gtk_notebook_set_tab_label(GTK_NOTEBOOK(nb_main),
+		gtk_notebook_get_nth_page(GTK_NOTEBOOK(nb_main), 1),label_upload);
+	
+	/* Login page */
+	login_handle();
+	/* Upload page */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL , 4);
-	gtk_container_add(GTK_CONTAINER(vbox1), hbox);
+	gtk_container_add(GTK_CONTAINER(vbox2), hbox);
 
 	dialog = make_dialog(0);
 	sel_but = gtk_file_chooser_button_new_with_dialog (dialog);
@@ -252,17 +293,18 @@ static void startup (GtkApplication *pomfit, gpointer user_data)
 	link_but =  gtk_link_button_new_with_label("http://pomf.se", "Pomf it !");
 	g_signal_connect(link_but,"activate-link",
 								G_CALLBACK(open_all_links),NULL);
-	gtk_box_pack_start(GTK_BOX(vbox1),GTK_WIDGET(link_but),FALSE,TRUE,0);
+	gtk_box_pack_start(GTK_BOX(vbox2),GTK_WIDGET(link_but),FALSE,TRUE,0);
 	
 	status_bar = gtk_statusbar_new();
-	gtk_box_pack_start(GTK_BOX(vbox1),GTK_WIDGET(status_bar),FALSE,TRUE,0);
+	gtk_box_pack_start(GTK_BOX(vbox2),GTK_WIDGET(status_bar),FALSE,TRUE,0);
 	gtk_statusbar_push (GTK_STATUSBAR(status_bar), 1, POMFIT_VERSION);
 	
 	quit_but = gtk_button_new_with_label("Exit");
 	g_signal_connect(quit_but,"clicked",G_CALLBACK(pomfit_main_quit), pomfit);
-	gtk_box_pack_start(GTK_BOX(vbox1),GTK_WIDGET(quit_but),FALSE,FALSE,0);
+	gtk_box_pack_start(GTK_BOX(vbox_main),GTK_WIDGET(quit_but),FALSE,FALSE,0);
 
 	gtk_widget_show_all(window);
+	gtk_notebook_set_current_page (GTK_NOTEBOOK(nb_main),1);
 	gtk_widget_hide(window);
 
 }
@@ -495,4 +537,60 @@ static void update_preview (GtkFileChooser *file_chooser, gpointer data)
 	if (pixbuf_anim)
 		g_object_unref (pixbuf_anim);
 	gtk_file_chooser_set_preview_widget_active (file_chooser, HavePreview);
+}
+
+
+void login_handle(void)
+{
+	if(vbox3)
+		gtk_widget_destroy(vbox3);
+	
+	
+	if(IsLoggedIn == FALSE) {
+	vbox3 = gtk_box_new(GTK_ORIENTATION_VERTICAL , 0);
+	gtk_container_add(GTK_CONTAINER(vbox1), vbox3); 
+	
+	hbox_log1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL , 4);
+	gtk_container_add(GTK_CONTAINER(vbox3), hbox_log1);
+	
+	label_email = gtk_label_new ("Email:");
+	gtk_container_add(GTK_CONTAINER(hbox_log1), label_email);
+	entry_email = gtk_entry_new();
+	gtk_box_pack_end(GTK_BOX(hbox_log1),GTK_WIDGET(entry_email), TRUE, TRUE, 0);
+	
+	hbox_log2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL , 4);
+	gtk_container_add(GTK_CONTAINER(vbox3), hbox_log2);
+	
+	label_pass = gtk_label_new ("Pass: ");
+	gtk_container_add(GTK_CONTAINER(hbox_log2), label_pass);
+	entry_pass = gtk_entry_new();
+	gtk_box_pack_end(GTK_BOX(hbox_log2),GTK_WIDGET(entry_pass), TRUE, TRUE, 0);
+	gtk_entry_set_visibility(GTK_ENTRY(entry_pass), FALSE);
+	
+	login_but = gtk_button_new_with_label("Login");
+	g_signal_connect(login_but, "clicked", G_CALLBACK(curl_login), NULL);
+	gtk_box_pack_end(GTK_BOX(vbox3),GTK_WIDGET(login_but),TRUE,TRUE,4);
+	} 
+	else {
+	
+	vbox3 = gtk_box_new(GTK_ORIENTATION_VERTICAL , 0);
+	gtk_container_add(GTK_CONTAINER(vbox1), vbox3);
+	
+	label_session = gtk_label_new("You are logged in as:\n");
+	gtk_container_add(GTK_CONTAINER(vbox3), label_session);
+	
+	label_session = gtk_label_new(LoggedEmail);
+	gtk_container_add(GTK_CONTAINER(vbox3), label_session);
+	
+	
+	logout_but = gtk_button_new_with_label("Log out");
+	g_signal_connect(logout_but, "clicked", G_CALLBACK(curl_logout), NULL);
+	gtk_box_pack_end(GTK_BOX(vbox3),GTK_WIDGET(logout_but),TRUE,TRUE,4);
+	
+	
+	}
+	
+	gtk_widget_show_all(vbox3);
+	while (gtk_events_pending ())
+		gtk_main_iteration ();
 }

@@ -19,8 +19,8 @@
 
 #ifndef POMFIT_H
 	#define POMFIT_H
-	#define POMFIT_USER_AGENT "pomfit/0.0.5c"
-	#define POMFIT_VERSION "\"Pomf it !\" Uploader version 0.0.5c"
+	#define POMFIT_USER_AGENT "pomfit/0.0.6"
+	#define POMFIT_VERSION "\"Pomf it !\" Uploader version 0.0.6"
 	void quick_upload_pic(const char *keystring, void *user_data);
 	void curl_upload_file(gpointer **apFilesPaths , int ListCount);
 	void notify_me(char *output_url, char *FileName);
@@ -30,6 +30,11 @@
 	void save_to_log (char* FileName , char* url);
 	void open_acc_page(const char *keystring, void *user_data);
 	void remove_char(char *str, char garbage);
+	void pomfit_mkdir(void);
+	void pomfit_load_state(void);
+	void pomfit_save_state(void);
+	void curl_logout(GtkWidget *widget,gpointer user_data);
+	void curl_login(GtkWidget *widget,gpointer user_data);
 	int up_progress (void* ptr, double TotalToDownload, double NowDownloaded, 
 							double TotalToUpload, double NowUploaded);
 #endif
