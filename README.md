@@ -10,30 +10,15 @@ Running in tray, ready to upload anytime.
 ------------------------
 * User accounts
 * Batch Upload
-* Global hotkeys
+* Settable global hotkeys
 * Notifications
 * Upload log
 * Simplicity & Usability
 
-### About global hotkeys: (Defaults)	
+### Install guides:
 ------------------------
-* "Ctrl + Alt + 1" - Screencap Upload (Full desktop screen shot)
-* "Ctrl + Alt + 2" - Screencap Upload (Active window)
-* "Ctrl + Alt + 3" - Screencap Upload (click on window or select area)
-* "Ctrl + Alt + 1" - Screencap (Full desktop screen shot)
-* "Ctrl + Alt + 2" - Screencap (Active window)
-* "Ctrl + Alt + 3" - Screencap (click on window or select area)
-* "Ctrl + Alt + B" - Browser (opens last uploaded files link(s))
-* "Ctrl + Alt + F" - File upload (opens selection dialog)
-* Change defaults in your settings window.
-* Leave entry field empty to unbind (not use) certain hotkey
-* If your hotkey is not working, it's likely because another application running
-*	is already using it. Try another.
-
-### About user accounts:
-------------------------
-* Upon successfull login, your uploads will be linked with your pomf.se account.
-* Pomfit should keep your login 'fresh' every two hours.
+* [Linux Guide](https://github.com/Senketsu/pomfit/wiki/Install-Guide---Linux-version)
+* [Windows Guide](https://github.com/Senketsu/pomfit/wiki/Install-Guide---Windows-version)
 
 ### Contact
 * Feedback , thoughts , bug reports ?
