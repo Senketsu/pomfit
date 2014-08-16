@@ -1,6 +1,6 @@
 bin_PROGRAMS = pomfit
 pomfit_SOURCES = \
-				Main.c		\
+				Main_Linux.c		\
 				pomfit.c
 
 NOINST_H_FILES = \

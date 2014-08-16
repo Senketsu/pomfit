@@ -1,50 +1,41 @@
 # **pomfit - Pomf it !**
-## Current version 0.0.6 ~Cube~
-### Now with user accounts support !
+## Current version 0.1.0 ~X~
+### Now available for Windows too!
 ------------------------
-### Note: 0.0.6
-* Added user accounts support.
-* You can now login through pomfit to have your uploads linked to your account.
-* Another update probably, when file expirations will be implemented.(unless bugs appear)
-* Recommended update.
-* Thats all cayooties.
-
 ### About Pomf it !
-Image and file uploader for http://pomf.se written in C using GTK.
-Running in tray, ready to upload anytime through cli, file manager, keybind or trayicon.
+Image and file uploader for http://pomf.se
+Running in tray, ready to upload anytime.
 
 ### Features:
-------------
-* User Accounts
+------------------------
+* User accounts
 * Batch Upload
 * Global hotkeys
 * Notifications
 * Upload log
-* Upload status bar
-* Direct upload from file manager / cli / tray menu / keybinds
 * Simplicity & Usability
 
-### Global hotkeys:	
-----------------
-* "Ctrl + Alt + U" - Screencap Upload (click on window or select area)
-* "Ctrl + Alt + B" - Browser (opens last upload link)
-* "Ctrl + Alt + C" - ScreenCap (click on window or select area)
+### About global hotkeys: (Defaults)	
+------------------------
+* "Ctrl + Alt + 1" - Screencap Upload (Full desktop screen shot)
+* "Ctrl + Alt + 2" - Screencap Upload (Active window)
+* "Ctrl + Alt + 3" - Screencap Upload (click on window or select area)
+* "Ctrl + Alt + 1" - Screencap (Full desktop screen shot)
+* "Ctrl + Alt + 2" - Screencap (Active window)
+* "Ctrl + Alt + 3" - Screencap (click on window or select area)
+* "Ctrl + Alt + B" - Browser (opens last uploaded files link(s))
 * "Ctrl + Alt + F" - File upload (opens selection dialog)
-* You can always easily edit them in the Main source file to fit your taste.
+* Change defaults in your settings window.
+* Leave entry field empty to unbind (not use) certain hotkey
+* If your hotkey is not working, it's likely because another application running
+*	is already using it. Try another.
 
-### Install:
-	Extract -> Run autogen.sh -> make ->(su/sudo) make install
-
-### Dependencies:
-	'scrot' 'libcurl' 'libkeybinder3' 'libnotify' 'gtk3-dev'
-* Names may slightly vary on different distributions
-* Assuming you have basic dev tools to build (automake , autoconf , gcc ...)
-
-### Unofficial Arch Linux Package:
-[Version 0.0.6](http://a.pomf.se/rlmctt.tar.xz)
-* Install: pacman -U "packagename"
-* If someone feels like making real AUR package, go ahead.
+### About user accounts:
+------------------------
+* Upon successfull login, your uploads will be linked with your pomf.se account.
+* Pomfit should keep your login 'fresh' every two hours.
 
 ### Contact
-* Feedback , thoughts , bug reports or just talk ?
-* Feel free to follow me on [twitter](https://twitter.com/Senketsu_Dev) or visit pomf.se IRC channel
+* Feedback , thoughts , bug reports ?
+* Feel free to contact me on [twitter](https://twitter.com/Senketsu_Dev) ,visit [pomf.se IRC channel](https://kiwiirc.com/client/irc.pomf.se/?nick=Guest|?#cute)
+* Or create [issue](https://github.com/Senketsu/pomfit/issues) on Pomfit Github page.
