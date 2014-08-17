@@ -188,7 +188,7 @@ void pomfit_upload_file (void **apFilesPaths , int ListCount) {
 		rewind(pOutputFile);
 	}
 
-	pGetline = (char*) malloc (sizeof(char)*FileSize);
+	pGetline = (char*) malloc (sizeof(char)*512);
 	if(pGetline == NULL)
 		perror("Memory error");
 
@@ -197,7 +197,7 @@ void pomfit_upload_file (void **apFilesPaths , int ListCount) {
 		perror("Memory error");
 
 	i = 0;
-	while(fgets (pGetline , 512 , pOutputFile) != NULL )
+	while(fgets (pGetline , 511 , pOutputFile) != NULL )
 	{
 		pBuff = strstr(pGetline , "url\":\"");
 		pBuff += strlen("url\":\"");
