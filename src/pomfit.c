@@ -38,7 +38,7 @@ extern bool UploadSS;
 
 void pomfit_upload_file (void **apFilesPaths , int ListCount) {
 	char *pBuff = NULL;
-	char *pGetline = NULL;
+	char Getline[512];
 	void *pChoosedFile = NULL;
 	long long FileSize = 0;
 	double TotalTime = 0;
@@ -53,6 +53,8 @@ void pomfit_upload_file (void **apFilesPaths , int ListCount) {
 #elif _WIN32
     sprintf(OutputFilePath ,"%s\\curl_output" , ConfDir);
 #endif
+	if(access(OutputFilePath, F_OK ) != -1)
+		remove(OutputFilePath);
 	int i = 0;
 	int UpDone = 0;
 	if(ListCount == 0)
@@ -188,24 +190,20 @@ void pomfit_upload_file (void **apFilesPaths , int ListCount) {
 		rewind(pOutputFile);
 	}
 
-	pGetline = (char*) malloc (sizeof(char)*512);
-	if(pGetline == NULL)
-		perror("Memory error");
-
 	BatchLinks = (char*) realloc(BatchLinks,(UpDone*sizeof(UpFileUrl)));
 	if(BatchLinks == NULL)
 		perror("Memory error");
 
 	i = 0;
-	while(fgets (pGetline , 511 , pOutputFile) != NULL )
+	while(fgets (Getline , 511 , pOutputFile) != NULL )
 	{
-		pBuff = strstr(pGetline , "url\":\"");
+		pBuff = strstr(Getline , "url\":\"");
 		pBuff += strlen("url\":\"");
 		pBuff = strtok(pBuff , "\"");
 		if(strstr(pBuff,"\\") != NULL )
 			remove_char(pBuff, '\\');
 		sprintf(UpFileUrl ,"http://a.pomf.se/%s" , pBuff);
-		pBuff = strstr(pGetline , "name\":\"");
+		pBuff = strstr(Getline , "name\":\"");
 		pBuff += strlen("name\":\"");
 		pBuff = strtok(pBuff , "\"");
 		sprintf(FileName ,"%s" , pBuff);
@@ -255,7 +253,6 @@ void pomfit_upload_file (void **apFilesPaths , int ListCount) {
 		perror("Error deleting temp file");
 	pBuff = NULL;
 	pChoosedFile = NULL;
-	free(pGetline);
 	for(i = 0 ; i < ListCount; ++i)
 		apFilesPaths[i] = NULL;
 
@@ -505,18 +502,14 @@ int pomfit_curl_login(void)
 		fprintf(stderr,"Couldn't create output file");
 		return IsSuccess;
 	}
-	char *pGetLine = NULL;
-	pGetLine = (char*) malloc (sizeof(char)*512);
-	if(pGetLine == NULL)
-		fprintf(stderr,"Memory error");
-	while(fgets (pGetLine , 511 , pOutputFile) != NULL ) {
-		if(strstr(pGetLine, "Moe Panel") != NULL) {
+	char GetLine[512];
+	while(fgets (GetLine , 511 , pOutputFile) != NULL ) {
+		if(strstr(GetLine, "Moe Panel") != NULL) {
 			IsSuccess = true;
 			break;
 		}
 	}
 	fclose(pOutputFile);
-	free(pGetLine);
 	if(remove(LoginOutputFile) != 0)
 		perror("Error deleting temp file");
     if(IsSuccess == false)

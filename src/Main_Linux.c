@@ -83,6 +83,7 @@ static void pomfit_main_quit(GApplication *application, gpointer user_data)
 	pomfit_curl_logout();
 	}
 	write(fd[1], "KillChild", (strlen("KillChild")+1));
+	free(BatchLinks);
 	GApplication *application2 = user_data;
 	g_application_quit(application2);
 }
@@ -806,18 +807,17 @@ static void LoadSettings (void) {
 		fprintf(stderr ,"Couldn't load config file..using defaults\n");
 		return;
 	}
+	keybinder_unbind_all(Hotkey_FUP);
+	keybinder_unbind_all(Hotkey_PUP);
+	keybinder_unbind_all(Hotkey_CAP);
+	keybinder_unbind_all(Hotkey_OPEN);
 	const char *pBuff = NULL;
-	char *pGetline = NULL;
+	char Getline[512];
 	char Mod[2];
-	pGetline = (char*) malloc (sizeof(char)*512);
-	if(pGetline == NULL) {
-		fprintf(stderr ,"Memory error");
-	}
 	char MenuLabel[128];
-    while(fgets (pGetline , 512 , config) != NULL) {
-		if(strncmp(pGetline, "Hotkey_File_UP" , strlen("Hotkey_File_UP")) == 0) {
-			keybinder_unbind_all(Hotkey_FUP);
-            pBuff = strstr(pGetline , "=");
+    while(fgets (Getline , 512 , config) != NULL) {
+		if(strncmp(Getline, "Hotkey_File_UP" , strlen("Hotkey_File_UP")) == 0) {
+            pBuff = strstr(Getline , "=");
             pBuff += 2;
             snprintf(Hotkey_FUP, strlen(pBuff),"%s",pBuff);
             gtk_entry_set_text(GTK_ENTRY(entry_conf[0]), Hotkey_FUP);
@@ -825,9 +825,8 @@ static void LoadSettings (void) {
             sprintf(MenuLabel,"Upload File\t\t%s",Hotkey_FUP );
             gtk_menu_item_set_label ( GTK_MENU_ITEM(menuFileUp), MenuLabel);
 		}
-		else if(strncmp(pGetline, "Hotkey_SS_UP" , strlen("Hotkey_SS_UP")) == 0) {
-            keybinder_unbind_all(Hotkey_PUP);
-            pBuff = strstr(pGetline , "=");
+		else if(strncmp(Getline, "Hotkey_SS_UP" , strlen("Hotkey_SS_UP")) == 0) {
+            pBuff = strstr(Getline , "=");
             pBuff += 2;
             snprintf(Hotkey_PUP,strlen(pBuff),"%s",pBuff);
             gtk_entry_set_text(GTK_ENTRY(entry_conf[1]), Hotkey_PUP);
@@ -835,9 +834,8 @@ static void LoadSettings (void) {
             sprintf(MenuLabel,"Upload Screencap\t%s", Hotkey_PUP);
             gtk_menu_item_set_label (GTK_MENU_ITEM(menuCapUp), MenuLabel);
 		}
-		else if(strncmp(pGetline, "Hotkey_SS" , strlen("Hotkey_SS")) == 0) {
-			keybinder_unbind_all(Hotkey_CAP);
-            pBuff = strstr(pGetline , "=");
+		else if(strncmp(Getline, "Hotkey_SS" , strlen("Hotkey_SS")) == 0) {
+            pBuff = strstr(Getline , "=");
             pBuff += 2;
             snprintf(Hotkey_CAP,strlen(pBuff),"%s",pBuff);
             gtk_entry_set_text(GTK_ENTRY(entry_conf[2]), Hotkey_CAP);
@@ -845,9 +843,8 @@ static void LoadSettings (void) {
             sprintf(MenuLabel,"Screencap\t\t%s", Hotkey_CAP);
             gtk_menu_item_set_label (GTK_MENU_ITEM(menuCap) , MenuLabel);
 		}
-		else if(strncmp(pGetline, "Hotkey_Open_Links" , strlen("Hotkey_Open_Links")) == 0) {
-			keybinder_unbind_all(Hotkey_OPEN);
-            pBuff = strstr(pGetline , "=");
+		else if(strncmp(Getline, "Hotkey_Open_Links" , strlen("Hotkey_Open_Links")) == 0) {
+            pBuff = strstr(Getline , "=");
             pBuff += 2;
             snprintf(Hotkey_OPEN,strlen(pBuff),"%s",pBuff);
             gtk_entry_set_text(GTK_ENTRY(entry_conf[3]), Hotkey_OPEN);
@@ -855,15 +852,14 @@ static void LoadSettings (void) {
             sprintf(MenuLabel,"Open Last Link(s)\t%s", Hotkey_OPEN);
             gtk_menu_item_set_label (GTK_MENU_ITEM(menuOpen) , MenuLabel);
 		}
-		else if(strncmp(pGetline, "Keep_Uploaded_SS" , strlen("Keep_Uploaded_SS")) == 0) {
-            pBuff = strstr(pGetline , "=");
+		else if(strncmp(Getline, "Keep_Uploaded_SS" , strlen("Keep_Uploaded_SS")) == 0) {
+            pBuff = strstr(Getline , "=");
             pBuff += 2;
             strncpy(Mod,pBuff,1);
             KeepUploadedSS = atoi(Mod);
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_but_keepSS),KeepUploadedSS);
 	    }
 	}
-	free(pGetline);
 	pBuff = NULL;
 	fclose(config);
 }
