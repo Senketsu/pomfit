@@ -268,31 +268,27 @@ void pomfit_take_ss (bool Upload , int mode) {
 	char FilePath[128];
 	void *pFilePath[1];
 	char NewFilePath[256];
+	time_t now = time(NULL);
+	char TimeString[80];
+	struct tm  tstruct;
+	tstruct = *localtime(&now);
+	strftime(TimeString, sizeof(TimeString), "%Y-%m-%d-%H_%M_%S", &tstruct);
+	sprintf(FileName , "%s_%s.png" , TimeString , Upload == true ? "pomfup" : "ss");
 	
-	sprintf(Command, "sleep 0.3 && scrot -s '%%Y-%%m-%%d_%%H%%M%%S_%s.png'",
-			Upload == true ? "pomfup" : "ss");
+	sprintf(Command, "sleep 0.3 && scrot -s '%s'", FileName);
 	system(Command);
-	FILE *fp;
-	if(Upload)
-		fp = popen("cd && ls -Art *pomfup.png | tail -n 1","r");
-	else
-		fp = popen("cd && ls -Art *ss.png | tail -n 1","r");
-	if(!fp)
-		return;
-	else {
-		fscanf(fp, "%s",FileName);
-		pclose(fp);
-		sprintf(FilePath,"%s/%s",HomeDir,FileName);
-		pFilePath[0] = FilePath;
-	}
+
+	sprintf(FilePath,"%s/%s",HomeDir,FileName);
+	pFilePath[0] = FilePath;
 	if(Upload)
 		pomfit_upload_file (pFilePath, 1);
-	if(KeepUploadedSS) {
+	
+	if(!KeepUploadedSS && Upload)
+		remove(FilePath);
+	else {
 		sprintf(NewFilePath,"%s/%s", Upload == TRUE ? UploadedSsDir : SsDir, FileName);
 		rename(FilePath,NewFilePath);
 	}
-	else
-		remove(FilePath);
 	pFilePath[0] = NULL;
 #elif _WIN32
     Sleep(400);                 // To prevent context menu on screenshots

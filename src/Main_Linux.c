@@ -825,7 +825,7 @@ static void LoadSettings (void) {
             sprintf(MenuLabel,"Upload File\t\t%s",Hotkey_FUP );
             gtk_menu_item_set_label ( GTK_MENU_ITEM(menuFileUp), MenuLabel);
 		}
-		 if(strncmp(pGetline, "Hotkey_SS_UP" , strlen("Hotkey_SS_UP")) == 0) {
+		else if(strncmp(pGetline, "Hotkey_SS_UP" , strlen("Hotkey_SS_UP")) == 0) {
             keybinder_unbind_all(Hotkey_PUP);
             pBuff = strstr(pGetline , "=");
             pBuff += 2;
@@ -835,7 +835,7 @@ static void LoadSettings (void) {
             sprintf(MenuLabel,"Upload Screencap\t%s", Hotkey_PUP);
             gtk_menu_item_set_label (GTK_MENU_ITEM(menuCapUp), MenuLabel);
 		}
-		 if(strncmp(pGetline, "Hotkey_SS" , strlen("Hotkey_SS")) == 0) {
+		else if(strncmp(pGetline, "Hotkey_SS" , strlen("Hotkey_SS")) == 0) {
 			keybinder_unbind_all(Hotkey_CAP);
             pBuff = strstr(pGetline , "=");
             pBuff += 2;
@@ -845,7 +845,7 @@ static void LoadSettings (void) {
             sprintf(MenuLabel,"Screencap\t\t%s", Hotkey_CAP);
             gtk_menu_item_set_label (GTK_MENU_ITEM(menuCap) , MenuLabel);
 		}
-		 if(strncmp(pGetline, "Hotkey_Open_Links" , strlen("Hotkey_Open_Links")) == 0) {
+		else if(strncmp(pGetline, "Hotkey_Open_Links" , strlen("Hotkey_Open_Links")) == 0) {
 			keybinder_unbind_all(Hotkey_OPEN);
             pBuff = strstr(pGetline , "=");
             pBuff += 2;
@@ -855,7 +855,7 @@ static void LoadSettings (void) {
             sprintf(MenuLabel,"Open Last Link(s)\t%s", Hotkey_OPEN);
             gtk_menu_item_set_label (GTK_MENU_ITEM(menuOpen) , MenuLabel);
 		}
-		 if(strncmp(pGetline, "Keep_Uploaded_SS" , strlen("Keep_Uploaded_SS")) == 0) {
+		else if(strncmp(pGetline, "Keep_Uploaded_SS" , strlen("Keep_Uploaded_SS")) == 0) {
             pBuff = strstr(pGetline , "=");
             pBuff += 2;
             strncpy(Mod,pBuff,1);
