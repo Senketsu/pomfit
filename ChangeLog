@@ -1,4 +1,6 @@
-*2014-06-16	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.1.0
+*2014-09-06 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.1.0e
+*	fixed relogin fucntion where pipe wasn't set to unblocking (Linux)
+*2014-08-17	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.1.0
 *	Pomfit goes crossplatform, Windows & Linux now available
 *	Linux - login tweaks , settable hotkeys & some changes
 *2014-06-16	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.6

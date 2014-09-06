@@ -83,6 +83,7 @@ static void pomfit_main_quit(GApplication *application, gpointer user_data)
 	pomfit_curl_logout();
 	}
 	write(fd[1], "KillChild", (strlen("KillChild")+1));
+	close(fd[1]);
 	free(BatchLinks);
 	GApplication *application2 = user_data;
 	g_application_quit(application2);
@@ -680,6 +681,14 @@ void GetLoginData (void)
         IsLoged = true;
 
 		pipe(fd);
+		if (fcntl(fd[0], F_SETFL, O_NONBLOCK))
+		{
+			close(fd[0]);
+			close(fd[1]);
+			fprintf(stderr,"***Error: Piping failed | Relogin fork canceled");
+			return;
+		}
+		
 		pid_t pid;
 		pid = fork();
 		if (pid == -1)

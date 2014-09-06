@@ -26,6 +26,7 @@
 	#include <windowsx.h>
     #include <winuser.h>
     #include <wingdi.h>
+    #include <io.h>
 	#include <ShellAPI.h>
     #include <commctrl.h>
     #include <Commdlg.h>
@@ -39,10 +40,11 @@
 	#include <libnotify/notify.h>
 	#include <keybinder.h>
 	#include <curl/curl.h>
+	#include <unistd.h>
+	#include <fcntl.h>
 #endif
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <time.h>
 	#include <string.h>
 	#include <stdbool.h>
-	#include <unistd.h>
