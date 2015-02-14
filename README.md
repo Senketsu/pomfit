@@ -22,8 +22,8 @@ Running in tray, ready to upload (or fail miserably) anytime.
 
 ### Install guides:
 ------------------------
-* [Linux Guide](https://github.com/Senketsu/pomfit/wiki/Install-Guide---Linux-version)
-* [Windows Guide](https://github.com/Senketsu/pomfit/wiki/Install-Guide---Windows-version)
+* [Linux Guide](https://github.com/Senketsu/pomfit/wiki/Install-Guide-Linux-version)
+* [Windows Guide](https://github.com/Senketsu/pomfit/wiki/Install-Guide-Windows-version)
 
 ### Contact
 * Feedback , thoughts , bug reports ?
