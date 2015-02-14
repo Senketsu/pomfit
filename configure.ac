@@ -1,7 +1,8 @@
 AC_PREREQ(2.60)
-AC_INIT([pomfit], [0.1.0], [senketsu.dev@gmail.com])
+AC_INIT([pomfit], [0.2.0], [senketsu.dev@gmail.com])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CC
+AC_PROG_CXX
 AC_CONFIG_HEADERS([config.h])
 AC_CHECK_HEADER_STDBOOL
 AC_CONFIG_FILES([

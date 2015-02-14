@@ -1,22 +1,49 @@
-*2014-09-06 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.1.0e
+*** 2015-02-13 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.2.0
+*
+* Added: New keybinding settings
+* Added: Bunch of new settings
+* Added: 'Uploader Profiles'
+* Added: 'Uploads Manager' based on sqlite3
+* Added: 'Upload Queue' - Open file signals are now handled by queue instead
+* Added: Somewhat Error loging - /home/~user/.config/pomfit/error.log - will be improved in later versions
+* Removed: Login page & releated code - useless with the sate of pom.se login & new Uploads manager
+* Fixed: Huge ass notification icons on some DE/WM (found out when switched to awesome)
+* Other: Changed License from GPL -> MIT (no, nothing to do with 'occupy gpl' go away)
+* Other: Code separated into multiple files
+* Other: Windows pomfit now uses GTK3/Win32 combination for unified look
+* Other: This useless file should be more readable from now on (ahue)
+*
+*** 2014-09-06 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.1.0e
+*
 *	fixed relogin fucntion where pipe wasn't set to unblocking (Linux)
-*2014-08-17	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.1.0
+*
+*** 2014-08-17 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.1.0
+*
 *	Pomfit goes crossplatform, Windows & Linux now available
 *	Linux - login tweaks , settable hotkeys & some changes
-*2014-06-16	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.6
+*
+*** 2014-06-16 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.6
+*
 *	Added - User accounts support
-*2014-06-15	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.5c
+*
+*** 2014-06-15 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.5c
+*
 *	Fixing last bug fix .. ahue
 *	Some minor changes
-*2014-06-14	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.5b
+*
+*** 2014-06-14 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.5b
+*
 *	Fixing link issue with recent (temporary?)storage changes on pomf.se
 *	Fix for crashes caused by pasted part of code~
-*2014-04-22	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.5
+*
+*** 2014-04-22 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.5
+*
 *	Batch upload support & related changes
 *	Little source code formatting for better readability (hopefully)
 *	Some minor changes
-*2014-04-18	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.4
-*** Happy Easter everyone! ***
+*
+*** 2014-04-18 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.4
+*
 *	Added - File size limit check
 *	Added - Upload status bar
 *	Added - Keybind for file upload dialog 
@@ -27,17 +54,23 @@
 *	File chooser now with image preview & 2 filters (all files/images)
 *	Animated images preview optional (not resized therefore isn't recommended for everyone)
 *	Some minor changes
-*2014-03-28	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.3
+*
+*** 2014-03-28 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.3
+*
 *	Added tray menu items for file/screencap upload.Added .desktop file.
 *	Opening file from file manager with pomfit should upload it.
 *	Pomfit will run only one instance now.
-*2014-03-7	Senketsu <senketsu.dev@gmail.com>
+*
+*** 2014-03-7 Senketsu <senketsu.dev@gmail.com>
+*
 *	Fixed bug that caused uploader to crash when uploadig file with whitespace characters in name.
 *	Also little cosmetic changes in code & now log saves filename instead fullpath&filename
 *
-*2014-03-4	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.2
+*** 2014-03-4 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.2
+*
 *	Added "upload" log , might be useful sometimes
 *
-*2014-03-2	Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.1
+*** 2014-03-2 Senketsu <senketsu.dev@gmail.com> Pomfit version 0.0.1
 *
 *	Moving project to git, no prior changelog
+*

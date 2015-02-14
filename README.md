@@ -1,19 +1,24 @@
 # **pomfit - Pomf it !**
-## Current version 0.1.0 ~X~
-### Now available for Windows too!
+## Current version 0.2.0
+### Happy waifu / loners day 2015
 ------------------------
 ### About Pomf it !
-Image and file uploader for http://pomf.se
-Running in tray, ready to upload anytime.
+Not that cute image and file uploader for http://pomf.se
+Running in tray, ready to upload (or fail miserably) anytime.
 
 ### Features:
 ------------------------
-* User accounts
-* Batch Upload
-* Settable global hotkeys
-* Notifications
-* Upload log
-* Simplicity & Usability
+* Uploader Profiles
+* Uploads Manager
+* Upload Queue
+* (annoying) Notifications
+* (useless) Settings
+* (failing) Hotkeys
+* Simplicity & Usability (not guaranteed(TM))
+* Undocumented features
+* Nonexistent Documentations
+* & many more 'bad jokes' ( as in 'This code is bad joke')
+* Anyway read more at the [-> wiki <-](https://github.com/Senketsu/pomfit/wiki) pages
 
 ### Install guides:
 ------------------------
