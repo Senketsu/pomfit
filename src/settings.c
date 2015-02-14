@@ -561,7 +561,7 @@ void settings_paths_default(void) {
 	snprintf(DirUpScrn,sizeof(DirUpScrn),"%s/Uploaded",DirScrn);
 	settings_mkdir(DirUpScrn);
 	snprintf(PathIcon,sizeof(PathIcon),"/usr/share/pixmaps/pomfit.png");
-	snprintf(PathIcon_Loc,sizeof(PathIcon_Loc),"/usr/loc/share/pixmaps/pomfit.png");
+	snprintf(PathIcon_Loc,sizeof(PathIcon_Loc),"/usr/local/share/pixmaps/pomfit.png");
 	snprintf(PathCookie,sizeof(PathCookie),"%s/pomfit_cookies",DirConf);
 	snprintf(PathDB,sizeof(PathDB),"%s/Pomfit.db",DirConf);
 	snprintf(PathCurlOut ,sizeof(PathCurlOut),"%s/curl_output" , DirConf);
