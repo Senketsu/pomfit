@@ -237,9 +237,10 @@ void uploader_curl_file (void **apFilesPaths , int ListCount) {
 				UpDone,UpDone < 2 ? "" : "s",BatchSize ,
 				(int)BatchTotalTime > 60 ? (int)BatchTotalTime/60 : 0,
 				(int)BatchTotalTime%60 > 0 ? (int)BatchTotalTime%60 : 1);
-
-	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD),
-							BatchLinks, strlen(BatchLinks));
+	GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+	gtk_clipboard_set_can_store (clipboard,NULL,0);
+	gtk_clipboard_set_text(clipboard, BatchLinks, strlen(BatchLinks)-1);
+	gtk_clipboard_store(clipboard);
 	gtk_statusbar_push (GTK_STATUSBAR(status_bar), 1, buff);
 	sprintf(strchr(buff, '\0'),"\nLink%s copied to clipboard ", UpDone < 2 ? "" : "s");
 	pomfit_notify(buff,"Uploading Finished");

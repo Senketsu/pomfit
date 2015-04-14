@@ -30,7 +30,7 @@
 #include <gtk/gtk.h>
 #include <stdbool.h>
 #ifdef __linux__
-    #include <keybinder.h>
+    #include <keybinder-3.0/keybinder.h>
 #elif _WIN32
     #include <windows.h>
     #include "resource.h"

@@ -45,7 +45,7 @@
     #include <gdiplus/gdiplusimagecodec.h>
 	#include <gdk/gdkwin32.h>
 #elif __linux__
-	#include <keybinder.h>
+	#include <keybinder-3.0/keybinder.h>
 #endif
 #include "database.h"
 #include "settings.h"
@@ -343,6 +343,7 @@ static void signal_startup (GtkApplication *pomfit, gpointer user_data) {
 
 #ifdef __linux__
 	keybinder_init();
+	keybinder_set_use_cooked_accelerators(FALSE);
 #endif
 	keybinds_conf_load();
 
@@ -408,11 +409,42 @@ static void signal_startup (GtkApplication *pomfit, gpointer user_data) {
 #endif
 }
 
+int signal_cmd_line(GApplication *application, GApplicationCommandLine *cmdline) {
+
+	gchar **argv;
+	gint argc;
+	int i;
+	
+	argv = g_application_command_line_get_arguments (cmdline, &argc);
+	
+	if(argc > 1) {
+		if(strcmp( argv[1], "--upload") == 0 || strcmp( argv[1], "-u") == 0	) {
+			
+			void *fList[argc-2];
+			for (i = 0 ; i < argc - 2 ; ++i)
+				fList[i] = argv[i+2];
+			uploader_curl_file(fList,argc - 2);
+			printf("%s\n",BatchLinks);
+			for(i = 0 ; i < argc - 2 ; ++i)
+				fList[i] = NULL;
+			g_strfreev (argv);
+			pomfit_main_quit(application,NULL);
+			return 0;
+		} else {
+			printf("Invalid command line agruments.\nUse '-u' or '--upload' to upload a file(s).\n");
+			printf("Example: 'pomfit -u /home/cute/honk.png'\n");
+			pomfit_main_quit(application,NULL);
+		}
+	}
+	g_strfreev (argv);
+}
+
 int main (int argc,char *argv[]) {
 
 	int status;
 
-	pomfit=gtk_application_new("pomfit.uploader", G_APPLICATION_HANDLES_OPEN);
+	pomfit=gtk_application_new("pomfit.uploader", G_APPLICATION_HANDLES_COMMAND_LINE);
+	g_signal_connect (pomfit, "command-line", G_CALLBACK (signal_cmd_line), NULL);
 	g_signal_connect(pomfit, "startup", G_CALLBACK (signal_startup), NULL);
 	g_signal_connect(pomfit, "activate", G_CALLBACK (signal_activate), NULL);
 	g_signal_connect(pomfit, "open", G_CALLBACK (signal_open), argv);
