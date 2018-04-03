@@ -1,2 +1,4 @@
 type
-    StringChannel* = Channel[string]
+  StringChannel* = Channel[string]
+  TSplitFile* = tuple
+    dir, name, ext: string

@@ -1,7 +1,7 @@
 import os, strutils
+import gtk2, glib2
 import projTypes
 import projUtils
-import gtk2, glib2
 
 const
   VERSION = "v0.5.0-alpha"
@@ -9,8 +9,10 @@ const
   LINK = "https://github.com/Senketsu/pomfit"
 
 var 
-  chanUp: ptr StringChannel
-  chanMain: ptr StringChannel
+  chanUp*: ptr StringChannel
+  chanMain*: ptr StringChannel
+
+import fileChooser
 
 
 proc destroy(widget: PWidget, data: Pgpointer) {.cdecl.} =
@@ -48,8 +50,8 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   vbNtbUp.add(hboxUp)
 
   var btnChooser = button_new_from_stock(STOCK_OPEN)
-  # discard OBJECT(btnChooser).signal_connect("clicked",
-  #  SIGNAL_FUNC(chooseFiles), nil)
+  discard OBJECT(btnChooser).signal_connect("clicked",
+   SIGNAL_FUNC(fileChooser.start), winMain)
   hboxUp.pack_start(btnChooser, true, true, 0)
 
   var btnUpload = button_new("Upload")
