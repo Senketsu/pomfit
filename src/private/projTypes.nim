@@ -1,0 +1,2 @@
+type
+    StringChannel* = Channel[string]

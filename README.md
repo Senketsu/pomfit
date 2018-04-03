@@ -1,29 +1,67 @@
 # **pomfit - Pomf it !**
-## Current version 0.2.0
-### Happy waifu / loners day 2015
+**development branch for version 0.5**
+_First love dies hard_
 ------------------------
-### About Pomf it !
-Not that cute image and file uploader for http://pomf.se
+
+
+## Contents
+- [About](#about)
+- [FAQ](#faq)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Troubleshooting](#troubleshooting)
+- [Contacts](#contact)
+
+### About
+Not that cute image and file uploader (originally made) for http://pomf.se
 Running in tray, ready to upload (or fail miserably) anytime.
 
-### Features:
-------------------------
-* Uploader Profiles
-* Uploads Manager
-* Upload Queue
-* (annoying) Notifications
-* (useless) Settings
-* (failing) Hotkeys
-* Simplicity & Usability (not guaranteed(TM))
-* Undocumented features
-* Nonexistent Documentations
-* & many more 'bad jokes' ( as in 'This code is bad joke')
-* Anyway read more at the [-> wiki <-](https://github.com/Senketsu/pomfit/wiki) pages
+#### FAQ
+Questions nobody asked, but here you have the answers.
 
-### Install guides:
+**Why the version leap ? (0.2 -> 0.5)**
+In the mean time, I've actually developed two new version that I've never published for various reasons.
+The version 0.3 (iirc) was in the works but was abandoned around the time when pomf.se ended it's services.
+The version 0.4 was a shift to Nim that was almost finished but I forgot about it and it became obsolete code due to the Nim's development.
+
+**Why is Pomfit still being developed ?**
+This project started as my first project after finishing learning basics of C and I wanted to hone my skills.
+Also, I really needed something to substitute puush app for Linux. Thus the reason for me still playing around with this project.
+
+**Why are you using Nim ?**
+It's a language I fell in love with long time ago. It immediately become my go-to language for all my free time projects.
+
+**Why so active on GitHub all of a sudden ?**
+I had dumb practice of writting code and keeping it unpublished until I considered the version done and I cleaned up the code. 
+Not utilizing GitHub as anything but publishing platform.
+Reason was I had low self esteem in my code and I would stress over any possible bug or even a noobish comment in my code.
+Yeah, I have my issues.. s-shad up b-baka !11!!
+
 ------------------------
-* [Linux Guide](https://github.com/Senketsu/pomfit/wiki/Install-Guide-Linux-version)
-* [Windows Guide](https://github.com/Senketsu/pomfit/wiki/Install-Guide-Windows-version)
+### Features:
+Features currently implemented in:
+* it compiles
+* it runs (sometimes)
+* it quits
+
+### Requirements
+TODO (Will be updated before tagged release.)
+```
+Nim compiler
+libpng
+nimble package manager
+nimble packages  x11 / png / oldwinapi
+```
+
+### Installation:
+TODO
+I'll tag any releases. Until then, this section is moot.
+Check back when any tagged version comes out.
+
+### Troubleshooting
+TODO
+Load a gun and shoot it.. duh
 
 ### Contact
 * Feedback , thoughts , bug reports ?
