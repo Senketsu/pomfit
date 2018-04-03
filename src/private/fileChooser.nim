@@ -25,8 +25,12 @@ else:
     
     for ext in acceptTypes:
       if ext == spFile.ext:
-        let pvImage = pixbuf_new_from_file_at_size(pvPath, 192, -1, nil)
-        pvWidget.set_from_pixbuf(pvImage)
+        if ext == ".gif":
+          var pvImage = pixbuf_animation_new_from_file(pvPath, nil)
+          pvWidget.set_from_animation(pvImage)
+        else:
+          var pvImage = pixbuf_new_from_file_at_size(pvPath, 224, -1, nil)
+          pvWidget.set_from_pixbuf(pvImage)
         dialog.set_preview_widget_active(true)
         return
     dialog.set_preview_widget_active(false)
@@ -34,7 +38,7 @@ else:
   
   proc create*(window: PWindow, curDir: string = ""): PFileChooser =
     var preview = image_new()
-    preview.set_size_request(192,192)
+    preview.set_size_request(224, 224)
 
     var filterAll = file_filter_new()
     filterAll.add_pattern("*")
