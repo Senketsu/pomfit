@@ -22,6 +22,6 @@ proc start*(chanMain, chanUp: ptr StringChannel) =
     else:
       gui_gtk.createMainWin(chanMain, chanUp)
   except:
-    echoInfo("***Error: Starting GUI failed. '$1'" % ["errMSG"])
+    echoInfo("***Error: Starting GUI failed.\n\t'$1'" % [getCurrentExceptionMsg()])
 
 

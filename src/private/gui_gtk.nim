@@ -1,7 +1,9 @@
 import os, strutils
+import db_sqlite
 import gtk2, glib2, gdk2pixbuf
 import projTypes
 import projUtils
+import database
 
 const
   VERSION = "v0.5.0-alpha"
@@ -14,10 +16,10 @@ var
   pbMain*: PProgressBar
   sbMain*: PStatusBar
   piIco*: PPixBuf
+  pdbConn*: DbConn
 
 import fileChooser
 import lib/gtk2ext
-
 
 proc destroy(widget: PWidget, data: Pgpointer) {.cdecl.} =
   chanUp[].send("quit")
@@ -189,6 +191,7 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
 
   chanUp = channelUp
   chanMain = channelMain
+  pdbConn = openPomfitDatabase()
 
   winMain.show_all()
   main()

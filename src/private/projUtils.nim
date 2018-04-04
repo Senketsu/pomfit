@@ -127,3 +127,17 @@ proc getPath*(name: string): string =
     discard
   
 
+proc checkDirectories*(): bool =
+  if not existsDir(projUtils.getPath("dirMain")):
+    try:
+      createDir(projUtils.getPath("dirMain"))
+      createDir(projUtils.getPath("dirData"))
+      createDir(projUtils.getPath("dirConf"))
+      createDir(projUtils.getPath("dirLog"))
+      result = true
+    except:
+      logEvent(true, "***Error: Coudn't create Pomfit directory.\n\t '$1'" % [
+        getCurrentExceptionMsg()])
+  else:
+    result = true
+

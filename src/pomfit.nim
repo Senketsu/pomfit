@@ -41,7 +41,10 @@ proc threadMainStart(threadID: int) {.thread.} =
 
 proc launch() =
   echoInfo("\t*** Pomfit starting***")
-
+  if not checkDirectories():
+    echoInfo("Quitting...")
+    quit()
+  
   channelMain.open()
   createThread(threadMain, threadMainStart, 0)
   channelUploader.open()
