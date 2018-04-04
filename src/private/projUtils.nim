@@ -104,3 +104,26 @@ proc logEvent*(logThis: bool, msg: string) =
     eventFile.writeLine("$1: $2" % [tStamp,msg])
     eventFile.flushFile()
     eventFile.close()
+
+proc getPath*(name: string): string =
+  result = ""
+  var
+    dirHome = getHomeDir()
+    dirMain = joinPath(getConfigDir(), "pomfit")
+  case name
+  of "dirHome":
+    result = dirHome
+  of "dirMain":
+    result = dirMain
+  of "dirData":
+    result = joinPath(dirMain, "data")
+  of "dirConf":
+    result = joinPath(dirMain, "cfg")
+  of "dirLog":
+    result = joinPath(dirMain, "logs")
+  of "fileDB":
+    result = joinPath(dirMain, "data/pomfit.db")
+  else:
+    discard
+  
+

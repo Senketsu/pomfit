@@ -7,8 +7,7 @@ else:
 
   import os, strutils
   import glib2, gtk2, gdk2pixbuf
-  from gui_gtk import chanMain, chanUp
-
+  from gui_gtk import chanMain, chanUp, sbMain
 
 
   proc update(widget: PWidget, data: Pgpointer) =
@@ -36,7 +35,7 @@ else:
     dialog.set_preview_widget_active(false)
   
   
-  proc create*(window: PWindow, curDir: string = ""): PFileChooser =
+  proc create(window: PWindow, curDir: string = ""): PFileChooser =
     var preview = image_new()
     preview.set_size_request(224, 224)
 
@@ -67,11 +66,9 @@ else:
     result.set_preview_widget(preview)
     discard result.g_signal_connect("update-preview",
      G_CALLBACK(fileChooser.update), nil)
-    
-    return result
 
 
-  proc open*(window: PWindow, root: string = ""): seq[string] =
+  proc open(window: PWindow, root: string = ""): seq[string] =
     var dialog = fileChooser.create(window)
     if root.len > 0:
       discard dialog.set_current_folder_uri(root)
@@ -94,5 +91,5 @@ else:
       let fNo = (filePaths.high + 1)
       let info = ("Added $1 file$2 into the queue." % [
         $fNo, if fNo == 0: "" else: "s"])
-      ## TODO: a way to push this into status bar /  progress bar
-      ##  maybe a global pointer .. is that even gc safe ?
+      discard sbMain.push(0, info)
+
