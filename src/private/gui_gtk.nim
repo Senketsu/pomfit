@@ -13,6 +13,7 @@ var
   chanMain*: ptr StringChannel
   pbMain*: PProgressBar
   sbMain*: PStatusBar
+  piIco*: PPixBuf
 
 import fileChooser
 import lib/gtk2ext
@@ -91,6 +92,9 @@ proc createTrayMenu(win: PWindow): PMenu =
   result.show_all()
 
 
+include settings
+include profiles
+
 proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
 
   var winMain: PWindow
@@ -101,7 +105,7 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   winMain.set_title(INFO)
   winMain.set_default_size(480, 270)
   discard winMain.signal_connect("destroy", SIGNAL_FUNC(gui_gtk.destroy), nil)
-  var piIco = pixbuf_new_from_file_at_size(joinPath(getAppDir(), 
+  piIco = pixbuf_new_from_file_at_size(joinPath(getAppDir(), 
     "../data/pomfit.png"), 64, 64, nil)
   winMain.set_icon(piIco)
   var trayMenu = createTrayMenu(winMain)
@@ -119,7 +123,7 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   label = label_new("Upload")
   OBJECT(label).set("can-focus", false, nil)
   ntbMain.set_tab_label(get_nth_page(ntbMain, gint(0)), label)
-  ntbMain.set_size_request(480, 210)
+  ntbMain.set_size_request(480, 240)
 
   var hboxUp = hbox_new(false, 4)
   vbNtbUp.add(hboxUp)
@@ -145,6 +149,22 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   OBJECT(label).set("can-focus", false, nil)
   ntbMain.set_tab_label(get_nth_page(ntbMain, gint(1)), label)
 
+  var btnSettings = button_new("Settings")
+  discard OBJECT(btnSettings).signal_connect("clicked",
+   SIGNAL_FUNC(gui_gtk.settingsOpen), winMain)
+  vbNtbSetting.pack_start(btnSettings, true, true, 0)
+
+  var btnProfiles = button_new("Profiles")
+  discard OBJECT(btnProfiles).signal_connect("clicked",
+   SIGNAL_FUNC(gui_gtk.profilesOpen), winMain)
+  vbNtbSetting.pack_start(btnProfiles, true, true, 0)
+
+  var btnKeybinds = button_new("Keybinds")
+  # discard OBJECT(btnKeybinds).signal_connect("clicked",
+  #  SIGNAL_FUNC(gui_gtk.keybindsOpen), winMain)
+  vbNtbSetting.pack_start(btnKeybinds, true, true, 0)
+
+  
   # Tab Tools
   var vbNtbTools = vbox_new(false, 0)
   ntbMain.add(vbNtbTools)
@@ -153,8 +173,8 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   ntbMain.set_tab_label(get_nth_page(ntbMain, gint(2)), label)
 
   var hboxBottom = hbox_new(false, 10)
-  vbMain.pack_end(hboxBottom, true, true, 0)
-  hboxBottom.set_size_request(-1, 40)
+  vbMain.pack_end(hboxBottom, true, false, 0)
+  hboxBottom.set_size_request(-1, 30)
 
   sbMain = status_bar_new()
   sbMain.set_tooltip_text("General information is shown here...")
@@ -165,7 +185,7 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   discard OBJECT(btnQuit).signal_connect("clicked",
    SIGNAL_FUNC(gui_gtk.destroy), nil)
   btnQuit.set_size_request(90, 30)
-  hboxBottom.pack_start(btnQuit, false, true, 10)
+  hboxBottom.pack_start(btnQuit, false, false, 10)
 
   chanUp = channelUp
   chanMain = channelMain
