@@ -1,11 +1,11 @@
 import os, strutils
-import db_sqlite
+import ndbex/db_sqlite_ex
 import projTypes
 import projUtils
 
 proc createDefaults(conn: DbConn) =
   conn.exec(sql("""INSERT INTO profiles (id, name, api, size, form_id,
-    form_type, isDefault) VALUES (0, ?, ?, 150000000, ?, ?, 1)"""), "Uguu.se",  
+    form_type, isActive) VALUES (0, ?, ?, 150000000, ?, ?, 1)"""), "Uguu.se",  
     "http://uguu.se/api.php?d=upload", "file", "multipart/form-data")
 
 
@@ -17,7 +17,7 @@ proc createPomfitDatabase(conn: DbConn) =
       regex_d VARCHAR(127), form_id VARCHAR(63) NOT NULL,
       form_type VARCHAR(127) NOT NULL, form_name VARCHAR(255),
       prepend VARCHAR(255), append VARCHAR(255),
-      isDefault INTEGER NOT NULL DEFAULT 0)"""))
+      isActive INTEGER NOT NULL DEFAULT 0)"""))
 
     conn.exec(sql("""CREATE TABLE uploads (id INTEGER PRIMARY KEY AUTOINCREMENT,
       name VARCHAR(255) NOT NULL, url VARCHAR(255) NOT NULL UNIQUE,
@@ -27,8 +27,7 @@ proc createPomfitDatabase(conn: DbConn) =
       path VARCHAR(511) NOT NULL UNIQUE)"""))
     conn.createDefaults()
   except:
-    logEvent(true, "***Error DB: Creating Pomfit database..\t\n '$1'" % [
-      getCurrentExceptionMsg()])
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
 proc openPomfitDatabase*(): DbConn =
   var path = projUtils.getPath("fileDB")
@@ -37,6 +36,79 @@ proc openPomfitDatabase*(): DbConn =
     result.createPomfitDatabase()
   else:
     result = open(connection = path, "", "", "")
+
+
+proc getProfilesActive*(conn: DbConn): string =
+  try:
+    let val = conn.getValueNew(sql("""SELECT name FROM profiles WHERE isActive = 1"""))
+    if val.hasData:
+      result = val.data
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+
+proc getProfilesNames*(conn: DbConn): seq[string] =
+  try:
+    var rows = conn.getAllRowsNew(sql("""SELECT name FROM profiles"""))
+    result = @[]
+    for row in rows:
+      if row.hasData:
+        result.add(row.data[0])
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+proc getProfileData*(conn: DbConn, name: string): seq[string] =
+  try:
+    result = @[]
+    var row: RowNew
+    row = conn.getRowNew(sql("""SELECT * FROM profiles WHERE name =  ?"""),name)
+    result = row.data
+    result.delete(0)
+  except:
+    logEvent(true, "***Error DB: Reading profile data..\t\n '$1'" % [
+      getCurrentExceptionMsg()])
+
+proc updateProfilesActive*(conn: DbConn, name: string): bool =
+  try:
+    conn.exec(sql("""UPDATE profiles SET isActive = 0 WHERE isActive = 1"""))
+    conn.exec(sql("""UPDATE profiles SET isActive = 1 WHERE name = ?"""), name)
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+proc deleteProfile*(conn: DbConn, name: string): bool =
+  try:
+    var isAct = conn.getValue(sql("""SELECT isActive FROM profiles WHERE name = ?"""), name)
+    if isAct == "1":
+      conn.exec(sql("""UPDATE profiles SET isActive = 1 WHERE id = 0"""))
+      
+    conn.exec(sql("""DELETE FROM profiles WHERE name = ?"""), name)
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+proc addProfileData*(conn: DbConn, pData: seq[string]): bool =
+  try:
+    conn.exec(sql("""INSERT INTO profiles (name, api, size, regex_f, regex_d,
+      form_id, form_type, form_name, prepend, append) VALUES (?,
+      ?, ?, ?, ?, ?, ?, ?, ?, ?)"""), pData[0], pData[1], pData[2], pData[3],
+      pData[4], pData[5], pData[6], pData[7], pData[8], pData[9])
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+
+proc updateProfileData*(conn: DbConn, pData: seq[string]): bool =
+  try:
+    conn.exec(sql("""INSERT OR REPLACE INTO profiles (name, api, size, regex_f,
+      regex_d, form_id, form_type, form_name, prepend, append) VALUES (?,
+      ?, ?, ?, ?, ?, ?, ?, ?, ?)"""), pData[0], pData[1], pData[2], pData[3],
+      pData[4], pData[5], pData[6], pData[7], pData[8], pData[9])
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+
 
 
 

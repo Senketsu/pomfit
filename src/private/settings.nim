@@ -5,9 +5,6 @@ proc settingsSave(widget: PWidget, data: Pgpointer) =
 proc settingsReset(widget: PWidget, data: Pgpointer) =
   echoInfo("*Debug: TODO: Reset settings")
 
-proc settingsClose(widget: PWidget, data: Pgpointer) =
-  WINDOW(data).destroy()
-
 proc tbToggleLabel(widget: PWidget, data: Pgpointer) =
   let button = TOGGLE_BUTTON(widget)
   if button.get_active():
@@ -23,7 +20,7 @@ proc settingsOpen(widget: PWidget, data: Pgpointer) {.procvar.} =
   winSett.set_border_width(10)
   winSett.set_title("Pomf It ! - Settings")
   winSett.set_default_size(640, 360)
-  discard winSett.signal_connect("destroy", SIGNAL_FUNC(settingsClose), winSett)
+  discard winSett.signal_connect("destroy", SIGNAL_FUNC(closeWindow), winSett)
   winSett.set_icon(piIco)
 
   var vbMain = vbox_new(false, 0)
@@ -84,7 +81,7 @@ proc settingsOpen(widget: PWidget, data: Pgpointer) {.procvar.} =
 
   var btnClose = button_new_from_stock(STOCK_CLOSE)
   discard OBJECT(btnClose).signal_connect("clicked",
-   SIGNAL_FUNC(settingsClose), winSett)
+   SIGNAL_FUNC(closeWindow), winSett)
   btnClose.set_size_request(90, 30)
   hbControl.pack_end(btnClose, false, false, 0)
 

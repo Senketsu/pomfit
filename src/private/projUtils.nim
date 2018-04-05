@@ -11,19 +11,39 @@ let
  logAllMsg*:bool = false
 
 
-proc isNumber* (s: string): bool =
+proc isNumber*(s: string): bool =
  var i = 0
  while s[i] in {'0'..'9'}: inc(i)
  result = i == s.len and s.len > 0
 
-proc echoInfo* (msg: string) =
-
+proc getPath*(name: string): string =
+  result = ""
+  var
+    dirHome = getHomeDir()
+    dirMain = joinPath(getConfigDir(), "pomfit")
+  case name
+  of "dirHome":
+    result = dirHome
+  of "dirMain":
+    result = dirMain
+  of "dirData":
+    result = joinPath(dirMain, "data")
+  of "dirConf":
+    result = joinPath(dirMain, "cfg")
+  of "dirLog":
+    result = joinPath(dirMain, "logs")
+  of "fileDB":
+    result = joinPath(dirMain, "data/pomfit.db")
+  else:
+    discard
+  
+proc echoInfo*(msg: string) =
  var
   isUploader,isGUI,isManager,isDebug,isUnk,isPrompt: bool = false
 
  if msg.startsWith("Uploader"):
   isUploader = true
- elif msg.startsWith("Irc Bot"):
+ elif msg.startsWith("GUI"):
   isGUI = true
  elif msg.startsWith("Manager"):
   isManager = true
@@ -54,13 +74,11 @@ proc echoInfo* (msg: string) =
    stdout.writeLine("[Info]: $1" % msg)
 
 
-
-
 proc logEvent*(logThis: bool, msg: string) =
  var
   isError,isDebug,isWarn,isNotice,isUnk: bool = false
   fileName: string = ""
-  logPath: string = joinPath(getHomeDir(),joinPath("Senshi","log"))
+  logPath: string = getPath("dirLog")
 
  if msg.startsWith("***Error"):
   isError = true
@@ -97,7 +115,6 @@ proc logEvent*(logThis: bool, msg: string) =
   let timeNewTrackWhen = utc(fromUnix(iTimeNow))
   tStamp = format(timeNewTrackWhen,"[yyyy-MM-dd] (HH:mm:ss)")
 
-
   var eventFile: File
   if isError or isDebug or isWarn:
    if eventFile.open(joinPath(logPath,fileName) ,fmAppend):
@@ -105,27 +122,6 @@ proc logEvent*(logThis: bool, msg: string) =
     eventFile.flushFile()
     eventFile.close()
 
-proc getPath*(name: string): string =
-  result = ""
-  var
-    dirHome = getHomeDir()
-    dirMain = joinPath(getConfigDir(), "pomfit")
-  case name
-  of "dirHome":
-    result = dirHome
-  of "dirMain":
-    result = dirMain
-  of "dirData":
-    result = joinPath(dirMain, "data")
-  of "dirConf":
-    result = joinPath(dirMain, "cfg")
-  of "dirLog":
-    result = joinPath(dirMain, "logs")
-  of "fileDB":
-    result = joinPath(dirMain, "data/pomfit.db")
-  else:
-    discard
-  
 
 proc checkDirectories*(): bool =
   if not existsDir(projUtils.getPath("dirMain")):

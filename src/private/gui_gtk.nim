@@ -27,6 +27,9 @@ proc destroy(widget: PWidget, data: Pgpointer) {.cdecl.} =
       discard gtk2.main_iteration()
   main_quit()
 
+proc closeWindow(widget: PWidget, data: Pgpointer) =
+  WINDOW(data).destroy()
+
 
 proc showTrayMenu(icon: PStatusIcon, btnID: guint,
                    actTime: guint32, data: Pgpointer) {.procvar.} =

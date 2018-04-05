@@ -21,7 +21,7 @@ proc start*(chanMain, chanUp: ptr StringChannel) =
       echo "No hybrid GUI yet"
     else:
       gui_gtk.createMainWin(chanMain, chanUp)
-  except:
-    echoInfo("***Error: Starting GUI failed.\n\t'$1'" % [getCurrentExceptionMsg()])
+  except: # this is a catch all for debug purposes
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
 

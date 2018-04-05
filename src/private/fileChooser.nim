@@ -10,6 +10,28 @@ else:
   from gui_gtk import chanMain, chanUp, sbMain
 
 
+  proc yesOrNo*(window: PWindow, question: string): bool =
+    let label = label_new(question)
+    let ynDialog = dialog_new_with_buttons(question, window,
+      DIALOG_DESTROY_WITH_PARENT, STOCK_NO, RESPONSE_NO,
+      STOCK_YES, RESPONSE_YES,nil)
+    ynDialog.vbox.pack_start(label, true, true, 30)
+    ynDialog.show_all()
+
+    if ynDialog.run() == RESPONSE_YES:
+      result = true
+    ynDialog.destroy()
+
+
+  proc infoUser*(window: PWindow, msgType: TDlgEnum, msg: string) =
+    var dialog = message_dialog_new(window,
+        DIALOG_MODAL or DIALOG_DESTROY_WITH_PARENT,
+        cast[TMessageType](int(msgType)), BUTTONS_OK, "%s", cstring(msg))
+    dialog.setTitle("Pomfit Info")
+    discard dialog.run()
+    dialog.destroy()
+
+
   proc update(widget: PWidget, data: Pgpointer) =
     var dialog = FILE_CHOOSER(widget)
     let pvPath = get_preview_filename(dialog)
