@@ -42,6 +42,60 @@ proc profileActivate(widget: PWidget, data: Pgpointer) =
         getCurrentExceptionMsg()])
 
 
+proc profilesReset(widget: PWidget, data: Pgpointer) =
+  let window = WINDOW(data)
+  if yesOrNo(window, """Do you really want to reset to default profile(s) ?
+    (This will delete all custom made profiles !)"""):
+    if pdbConn.resetProfiles():
+      profilesUpdateComboBox()
+    else:
+      infoUser(window, ERR, "Failed to reset profiles database.\t\n$1" % [
+        getCurrentExceptionMsg()])
+      
+
+proc convertSizeStringToBytes(sSize: string): string =
+  result = ""
+  if sSize.isNilOrWhitespace():
+    return
+  var
+    prefix = newString(len(sSize))
+    number = newString(len(sSize))
+    p,s: int = 0
+    iResult: BiggestUInt
+  for i in 0..sSize.len-1:
+    if sSize[i].isDigit:
+      number[s] = sSize[i]
+      inc(s)
+    else:
+      prefix[p] = sSize[i]
+      inc(p)
+  
+  number.delete(s, number.len-1)
+  prefix.delete(p, prefix.len-1)
+  case prefix.toLowerAscii()
+  of "kb":
+    iResult = (number.parseBiggestUINT() * 1000'u64)
+  of "mb":
+    iResult = (number.parseBiggestUINT() * 1000000'u64)
+  of "gb":
+    iResult = (number.parseBiggestUINT() * 1000000000'u64)
+  of "tb":
+    iResult = (number.parseBiggestUINT() * 1000000000000'u64)
+  of "kib":
+    iResult = (number.parseBiggestUINT() * 1024'u64)
+  of "mib":
+    iResult = (number.parseBiggestUINT() * 1048576'u64)
+  of "gib":
+    iResult = (number.parseBiggestUINT() * 1073741824'u64)
+  of "tib":
+    iResult = (number.parseBiggestUINT() * 1099511627776'u64)
+  of "":
+    result = number
+  else:
+    return "err" # return 'err' when prefix is 'unknown'
+  result = $(iResult)
+
+
 proc profileSave(widget: PWidget, data: Pgpointer) =
   var
     window = WINDOW(data)
@@ -65,7 +119,11 @@ proc profileSave(widget: PWidget, data: Pgpointer) =
   if profileData[0] == "" or profileData[1] == "":
     infoUser(window, WARN, "'Name' or 'API' fields can't be empty.")
     return
-
+  profileData[2] = convertSizeStringToBytes(profileData[2])
+  if profileData[2] == "err":
+    infoUser(window, ERR, "Invalid size input or prefix.")
+    return
+    
   if overwrite:
     if pdbConn.updateProfileData(profileData):
       profilesUpdateComboBox()
@@ -136,7 +194,8 @@ proc profilesOpen(widget: PWidget, data: Pgpointer) =
     http://pomf.se/upload.php""")
   descLabel[2].set_text("Size Limit")
   descLabel[2].set_tooltip_text("""Can be raw number or with suffix.
-    Valid suffixes: 'Mb' 'MB' 'Kb' 'KB' etc..""")
+    Valid suffixes: 'MiB' 'MB' 'KiB' 'KB' etc..
+    Leave empty for no limit.""")
   descLabel[3].set_text("Regex URL")
   descLabel[3].set_tooltip_text("[Optional] Replaces internal parser.")
   descLabel[4].set_text("Regex Delete URL")
@@ -195,12 +254,18 @@ proc profilesOpen(widget: PWidget, data: Pgpointer) =
   hbControl.set_size_request(-1, 30)
   vbMain.pack_end(hbControl, false, false, 5)
   
+  var btnReset = button_new("Reset")
+  discard OBJECT(btnReset).signal_connect("clicked",
+   SIGNAL_FUNC(profilesReset), winProf)
+  btnReset.set_size_request(90, 30)
+  hbControl.pack_start(btnReset, false, false, 0)
+
   label = label_new("Active Profile:")
   label.set_size_request(150, -1)
   hbControl.pack_start(label, false, false, 0)
   
   labActive = label_new("")
-  labActive.set_size_request(350, 30)
+  labActive.set_size_request(-1, 30)
   hbControl.pack_start(labActive, false, false, 0)
 
   var btnClose = button_new_from_stock(STOCK_CLOSE)

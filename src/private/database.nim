@@ -109,6 +109,14 @@ proc updateProfileData*(conn: DbConn, pData: seq[string]): bool =
     logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
 
+proc resetProfiles*(conn: DbConn): bool =
+  try:
+    conn.exec(sql("""DELETE FROM profiles"""))
+    conn.createDefaults()
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
 
 
 

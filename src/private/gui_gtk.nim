@@ -47,7 +47,7 @@ proc toggleVisible(widget: PWidget, data: Pgpointer){.procvar.} =
     window.set_no_show_all(true)
 
 
-proc createTrayWidget(win: PWindow, icon: PPixbuf, menu: PMenu): PStatusIcon =
+proc createTrayWidget(win: gtk2.PWindow, icon: PPixbuf, menu: PMenu): PStatusIcon =
   result = status_icon_new()
   discard result.g_signal_connect("activate", G_CALLBACK(toggleVisible), win)
   discard result.g_signal_connect("popup-menu", G_CALLBACK(showTrayMenu), menu)
@@ -56,18 +56,19 @@ proc createTrayWidget(win: PWindow, icon: PPixbuf, menu: PMenu): PStatusIcon =
   result.status_icon_set_visible(true)
 
 
-proc createTrayMenu(win: PWindow): PMenu =
+proc createTrayMenu(win: gtk2.PWindow): PMenu =
   result = menu_new()
-  var miFile = menu_item_new("Choose file(s)\t\t")
-  var miSep1 = separator_menu_item_new()
-  var miFullUp = menu_item_new("Capture & Upload Fullscreen\t\t")
-  var miAreaUp = menu_item_new("Capture & Upload Area / Window\t")
-  var miSep2 = separator_menu_item_new()
-  var miFull = menu_item_new("Capture Fullscreen\t\t")
-  var miArea = menu_item_new("Capture Area / Window\t\t")
-  var miSep3 = separator_menu_item_new()
-  var miShow = menu_item_new("Show / Hide")
-  var miQuit = menu_item_new("Quit")
+  var
+    miFile = menu_item_new("Choose file(s)\t\t")
+    miSep1 = separator_menu_item_new()
+    miFullUp = menu_item_new("Capture & Upload Fullscreen\t\t")
+    miAreaUp = menu_item_new("Capture & Upload Area / Window\t")
+    miSep2 = separator_menu_item_new()
+    miFull = menu_item_new("Capture Fullscreen\t\t")
+    miArea = menu_item_new("Capture Area / Window\t\t")
+    miSep3 = separator_menu_item_new()
+    miShow = menu_item_new("Show / Hide")
+    miQuit = menu_item_new("Quit")
 
   discard OBJECT(miFile).signal_connect("activate",
    SIGNAL_FUNC(fileChooser.start), win)
@@ -99,13 +100,14 @@ proc createTrayMenu(win: PWindow): PMenu =
 
 include settings
 include profiles
+include queue
 
 proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
 
-  var winMain: PWindow
+  var winMain: gtk2.PWindow
   var label: PLabel
   nim_init()
-  winMain = window_new(WINDOW_TOPLEVEL)
+  winMain = window_new(gtk2.WINDOW_TOPLEVEL)
   winMain.set_position(WIN_POS_MOUSE)
   winMain.set_title(INFO)
   winMain.set_default_size(480, 270)
@@ -176,6 +178,11 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   label = label_new("Tools")
   OBJECT(label).set("can-focus", false, nil)
   ntbMain.set_tab_label(get_nth_page(ntbMain, gint(2)), label)
+  
+  var btnQueue = button_new("Upload queue")
+  discard OBJECT(btnQueue).signal_connect("clicked",
+   SIGNAL_FUNC(gui_gtk.queueOpen), winMain)
+  vbNtbTools.pack_start(btnQueue, true, true, 0)
 
   var hboxBottom = hbox_new(false, 10)
   vbMain.pack_end(hboxBottom, true, false, 0)
