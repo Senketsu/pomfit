@@ -12,9 +12,40 @@ let
 
 
 proc isNumber*(s: string): bool =
- var i = 0
- while s[i] in {'0'..'9'}: inc(i)
- result = i == s.len and s.len > 0
+  var i = 0
+  while s[i] in {'0'..'9'}: inc(i)
+  result = i == s.len and s.len > 0
+
+
+proc `|`*(x: int, d: int): string =
+  result = $x
+  let pad = spaces(d.abs-len(result))
+  if d >= 0:
+    result = pad & result
+  else:
+    result = result & pad
+
+
+proc `|`*(s: string, d: int): string =
+  let pad = spaces(d.abs-len(s))
+  if d >= 0:
+    result = pad & s
+  else:
+    result = s & pad
+
+
+proc `|`*(f: float, d: tuple[w,p: int]): string =
+  result = formatFloat(f, ffDecimal, d.p)
+  let pad = spaces(d.w.abs-len(result))
+  if d.w >= 0:
+    result = pad & result
+  else:
+    result = result & pad
+
+
+proc `|`*(f: float, d: int): string =
+  $f | d
+
 
 proc getPath*(name: string): string =
   result = ""
@@ -38,89 +69,89 @@ proc getPath*(name: string): string =
     discard
   
 proc echoInfo*(msg: string) =
- var
-  isUploader,isGUI,isManager,isDebug,isUnk,isPrompt: bool = false
+  var
+    isUploader,isGUI,isManager,isDebug,isUnk,isPrompt: bool = false
 
- if msg.startsWith("Uploader"):
-  isUploader = true
- elif msg.startsWith("GUI"):
-  isGUI = true
- elif msg.startsWith("Manager"):
-  isManager = true
- elif msg.startsWith("Debug"):
-  isDebug = true
- elif msg[0] == '*':
-  isPrompt = true
- else:
-  isUnk = true
-
- when defined(Windows):
-  stdout.writeLine("[Info]: $1" % msg)
- else:
-  if cOut:
-   if isManager:
-    stdout.writeLine("[Info]: \27[0;35m$1\27[0m" % [msg])
-   elif isGUI:
-    stdout.writeLine("[Info]: \27[0;94m$1\27[0m" % [msg])
-   elif isUploader:
-    stdout.writeLine("[Info]: \27[0;95m$1\27[0m" % [msg])
-   elif isDebug:
-    stdout.writeLine("[Info]: \27[0;92m$1\27[0m" % [msg])
-   elif isPrompt:
-    stdout.writeLine("\27[0;96m$1\27[0m" % [msg])
-   else:
-    stdout.writeLine("[Info]: \27[0;93m$1\27[0m" % msg)
+  if msg.startsWith("Uploader"):
+    isUploader = true
+  elif msg.startsWith("GUI"):
+    isGUI = true
+  elif msg.startsWith("Manager"):
+    isManager = true
+  elif msg.startsWith("Debug"):
+    isDebug = true
+  elif msg[0] == '*':
+    isPrompt = true
   else:
-   stdout.writeLine("[Info]: $1" % msg)
+    isUnk = true
+
+  when defined(Windows):
+    stdout.writeLine("[Info]: $1" % msg)
+  else:
+    if cOut:
+      if isManager:
+        stdout.writeLine("[Info]: \27[0;35m$1\27[0m" % [msg])
+      elif isGUI:
+        stdout.writeLine("[Info]: \27[0;94m$1\27[0m" % [msg])
+      elif isUploader:
+        stdout.writeLine("[Info]: \27[0;95m$1\27[0m" % [msg])
+      elif isDebug:
+        stdout.writeLine("[Info]: \27[0;92m$1\27[0m" % [msg])
+      elif isPrompt:
+        stdout.writeLine("\27[0;96m$1\27[0m" % [msg])
+      else:
+        stdout.writeLine("[Info]: \27[0;93m$1\27[0m" % msg)
+    else:
+      stdout.writeLine("[Info]: $1" % msg)
 
 
 proc logEvent*(logThis: bool, msg: string) =
- var
-  isError,isDebug,isWarn,isNotice,isUnk: bool = false
-  fileName: string = ""
-  logPath: string = getPath("dirLog")
-
- if msg.startsWith("***Error"):
-  isError = true
-  fileName = "Error.log"
- elif msg.startsWith("*Notice"):
-  isNotice = true
- elif msg.startsWith("**Warning"):
-  isWarn = true
-  fileName = "Error.log"
- elif msg.startsWith("*Debug"):
-  isDebug = true
-  fileName = "Debug.log"
- else:
-  isUnk = true
-
- if cOut:
-  if isError:
-   stdout.writeLine("\27[1;31m$1\27[0m" % [msg])
-  elif isNotice:
-   stdout.writeLine("\27[0;34m$1\27[0m" % [msg])
-  elif isWarn:
-   stdout.writeLine("\27[0;33m$1\27[0m" % [msg])
-  elif isDebug:
-   stdout.writeLine("\27[0;32m$1\27[0m" % [msg])
-  else:
-   stdout.writeLine(msg)
- else:
-  stdout.writeLine(msg)
-
- if logEvents and logThis and not isUnk: # TODO finish after config
   var
-   tStamp: string = ""
-   iTimeNow: int = (int)getTime()
-  let timeNewTrackWhen = utc(fromUnix(iTimeNow))
-  tStamp = format(timeNewTrackWhen,"[yyyy-MM-dd] (HH:mm:ss)")
+    isError,isDebug,isWarn,isNotice,isUnk: bool = false
+    fileName: string = ""
+    logPath: string = getPath("dirLog")
 
-  var eventFile: File
-  if isError or isDebug or isWarn:
-   if eventFile.open(joinPath(logPath,fileName) ,fmAppend):
-    eventFile.writeLine("$1: $2" % [tStamp,msg])
-    eventFile.flushFile()
-    eventFile.close()
+  if msg.startsWith("***Error"):
+    isError = true
+    fileName = "Error.log"
+  elif msg.startsWith("*Notice"):
+    isNotice = true
+  elif msg.startsWith("**Warning"):
+    isWarn = true
+    fileName = "Error.log"
+  elif msg.startsWith("*Debug"):
+    isDebug = true
+    fileName = "Debug.log"
+  else:
+    isUnk = true
+
+  if cOut:
+    if isError:
+      stdout.writeLine("\27[1;31m$1\27[0m" % [msg])
+    elif isNotice:
+      stdout.writeLine("\27[0;34m$1\27[0m" % [msg])
+    elif isWarn:
+      stdout.writeLine("\27[0;33m$1\27[0m" % [msg])
+    elif isDebug:
+      stdout.writeLine("\27[0;32m$1\27[0m" % [msg])
+    else:
+      stdout.writeLine(msg)
+  else:
+    stdout.writeLine(msg)
+
+  if logEvents and logThis and not isUnk: # TODO finish after config
+    var
+      tStamp: string = ""
+      iTimeNow: int = (int)getTime()
+    let timeNewTrackWhen = utc(fromUnix(iTimeNow))
+    tStamp = format(timeNewTrackWhen,"[yyyy-MM-dd] (HH:mm:ss)")
+
+    var eventFile: File
+    if isError or isDebug or isWarn:
+      if eventFile.open(joinPath(logPath,fileName) ,fmAppend):
+        eventFile.writeLine("$1: $2" % [tStamp,msg])
+        eventFile.flushFile()
+        eventFile.close()
 
 
 proc checkDirectories*(): bool =

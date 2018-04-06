@@ -25,7 +25,7 @@ proc profileEdit(widget: PWidget, data: Pgpointer) =
   let pName = $cbProfiles.get_active_text()
   if pName == nil:
     return
-  var profile = pdbConn.getProfileData(pName)
+  var profile = pdbConn.getProfileDataAll(pName)
   for i in 0..iProfOpt-1:
     profEntry[i].set_text(cstring(profile[i]))
 

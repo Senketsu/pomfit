@@ -7,8 +7,9 @@ type
     WARN = 1
     ERR = 3
   tvQueueEnum* = enum
-    TVQ_FILENAME = (0, "Filename")
-    TVQ_STATUS = (1, "Status")
-    TVQ_SIZE = (2, "Size")
+    TVQ_NAME = (0, "Filename")
+    TVQ_SIZE = (1, "Size")
+    TVQ_STATUS = (2, "Status")
     TVQ_PATH = (3, "Path")
     TVQ_iCol = (4, "nil")
+    

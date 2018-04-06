@@ -51,6 +51,27 @@ proc queueTreeViewMenuCb(widget: PWidget, data: Pgpointer): bool =
   return true
 
 
+proc queueTreeViewRefresh() =
+  var
+    iter: PTreeIter
+    limit: uint64 = parseBiggestUInt(pdbConn.getProfileDataActive("size"))
+  tvQueueStore.clear()
+  var fileList = pdbConn.getQueueDataAll()
+  for item in fileList:
+    if item.existsFile():
+      let size: uint64 = uint64(getFileSize(item))
+      let name = item.splitFile().name
+      var status = ""
+      if size > limit and limit != 0:
+        status = "BIG"
+      else:
+        status = " OK"
+      var strSize = "$1 MB" % [ (float(size) / 1000000) | (10,2)]
+      tvQueueStore.append(iter, nil)
+      tvQueueStore.set(iter, TVQ_NAME, name, TVQ_SIZE, strSize, TVQ_STATUS,
+        status, TVQ_PATH, item, -1)
+
+
 proc queueCreateTreeViewMenu(window: gtk2.PWindow): PMenu =
   result = menu_new()
   var
@@ -94,10 +115,16 @@ proc queueCreateTreeView(window: gtk2.PWindow, view: var PTreeView,
 
 
 proc queueStartUpload(widget: PWidget, data: Pgpointer) =
-  echoInfo("TODO: signal send upload")
+  chanUp[].send("cmd_up")
+
 
 proc queueReset(widget: PWidget, data: Pgpointer) =
-  echoInfo("TODO: reset queue tree")
+  let window = gtk2.WINDOW(data)
+  if pdbConn.resetQueue():
+    queueTreeViewRefresh()
+  else:
+    infoUser(window, ERR, "Failed to delete all items from queue\t\n$1" % [
+      getCurrentExceptionMsg()])
 
 
 proc queueOpen(widget: PWidget, data: Pgpointer) =
@@ -128,30 +155,29 @@ proc queueOpen(widget: PWidget, data: Pgpointer) =
   hbControl.set_size_request(-1, 30)
   vbMain.pack_end(hbControl, false, false, 5)
 
-  var btnReset = button_new_from_stock(STOCK_CLEAR)
-  discard OBJECT(btnReset).signal_connect("clicked",
+  var btnClear = button_new_from_stock(STOCK_CLEAR)
+  discard OBJECT(btnClear).signal_connect("clicked",
    SIGNAL_FUNC(queueReset), winQueue)
-  btnReset.set_size_request(90, 30)
-  hbControl.pack_start(btnReset, false, false, 0)
+  btnClear.set_size_request(90, 30)
+  hbControl.pack_start(btnClear, false, false, 0)
 
-  var btnBrowse = button_new_from_stock(STOCK_INDEX)
+  var btnBrowse = button_new("Add files")
   discard OBJECT(btnBrowse).signal_connect("clicked",
    SIGNAL_FUNC(fileChooser.start), winQueue)
   btnBrowse.set_size_request(90, 30)
-  hbControl.pack_start(btnBrowse, false, false, 0)
-  
-  var btnUpload = button_new_from_stock(STOCK_APPLY)
-  btnUpload.set_label("Upload")  # TEST
-  discard OBJECT(btnUpload).signal_connect("clicked",
-   SIGNAL_FUNC(queueStartUpload), winQueue)
-  btnUpload.set_size_request(90, 30)
-  hbControl.pack_start(btnUpload, false, false, 0)
+  hbControl.pack_start(btnBrowse, false, false, 20)
 
   var btnClose = button_new_from_stock(STOCK_CLOSE)
   discard OBJECT(btnClose).signal_connect("clicked",
    SIGNAL_FUNC(closeWindow), winQueue)
   btnClose.set_size_request(90, 30)
   hbControl.pack_end(btnClose, false, false, 0)
+  
+  var btnUpload = button_new("Upload")
+  discard OBJECT(btnUpload).signal_connect("clicked",
+   SIGNAL_FUNC(queueStartUpload), winQueue)
+  btnUpload.set_size_request(90, 30)
+  hbControl.pack_end(btnUpload, false, false, 20)
   
   winQueue.show_all()
 

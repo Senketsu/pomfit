@@ -57,7 +57,20 @@ proc getProfilesNames*(conn: DbConn): seq[string] =
   except:
     logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
-proc getProfileData*(conn: DbConn, name: string): seq[string] =
+proc getProfileDataActive*(conn: DbConn, name: string): string =
+  try:
+    result = ""
+    let res = conn.getValueNew(sql("""SELECT size FROM profiles WHERE isActive = 1"""))
+    if res.hasData:
+      result = res.data
+    else:
+      result = "0"
+  except:
+    logEvent(true, "***Error DB: Reading profile data..\t\n '$1'" % [
+      getCurrentExceptionMsg()])
+
+
+proc getProfileDataAll*(conn: DbConn, name: string): seq[string] =
   try:
     result = @[]
     var row: RowNew
@@ -117,6 +130,24 @@ proc resetProfiles*(conn: DbConn): bool =
   except:
     logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
+
+proc resetQueue*(conn: DbConn): bool =
+  try:
+    conn.exec(sql("""DELETE FROM queue"""))
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+
+proc getQueueDataAll*(conn: DbConn): seq[string] =
+  try:
+    result = @[]
+    var rows = conn.getAllRowsNew(sql("""SELECT path FROM queue"""))
+    for row in rows:
+      if row.hasData:
+        result.add(row.data)
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
 
 
