@@ -3,6 +3,12 @@ const
   oKeybinds = 8
   iKeybinds = 9
 
+var
+  cbMod1: array[iKeybinds, PComboBoxText]
+  cbMod2: array[iKeybinds, PComboBoxText]
+  btnKey:  array[iKeybinds, PButton]
+  tbEnable: array[iKeybinds, PToggleButton]
+
 
 proc tbChangeLabel(widget: PWidget, data: Pgpointer) =
   var btn = TOGGLE_BUTTON(widget)
@@ -21,6 +27,47 @@ proc readKeyPress(widget: PWidget, event: gdk2.PEvent, data: Pgpointer): bool =
     return
   else:
     btn.set_label(keyName)
+
+proc clearKeyBind* (keybind: var TPomfitKb) =
+  keybind.id = 0
+  keybind.mod1 = MOD_NONE
+  keybind.mod2 = MOD_NONE
+  keybind.key = ""
+  keybind.full = ""
+  keybind.isActive = false
+
+
+proc keybindsSetActive(keyBinds: seq[TPomfitKb]) =
+  for i in 0..oKeybinds:
+    cbMod1[i].set_active(gint(ord(keyBinds[i].mod1)))
+    cbMod2[i].set_active(gint(ord(keyBinds[i].mod2)))
+    btnKey[i].set_label(keyBinds[i].key)
+    tbEnable[i].set_active(keyBinds[i].isActive)
+
+
+proc keybindsSave(widge: PWidget, data: Pgpointer) =
+  var keyBinds: seq[TPomfitKb] = @[]
+  for i in 0..oKeybinds:
+    var newBind: TPomfitKb
+    var iMod1 = if cbMod1[i].get_active() < 0: 0 else: cbMod1[i].getActive()
+    var iMod2 = if cbMod2[i].get_active() < 0: 0 else: cbMod1[i].getActive()
+    var sKey = $btnKey[i].get_label()
+    newBind.id = i
+    newBind.mod1 = cast[TBindModEnum](iMod1)
+    newBind.mod2 = cast[TBindModEnum](iMod1)
+    newBind.key = sKey.toUpperAscii()
+    newBind.isActive = tbEnable[i].get_active()  
+    newBind.full = "$1$2$3" % [$newBind.mod1, $newBind.mod2, newBind.key]
+    keyBinds.add(newBind)
+  if pdbConn.setKeyBindsAll(keyBinds):
+    discard ## TODO: set em in nkb
+
+proc keybindsReset(widget: PWidget, data: Pgpointer) =
+  let window = gtk2.WINDOW(data)
+  if yesOrNo(window, "Do you really want to reset your keybinds ?"):
+    if not pdbConn.resetKeybinds():
+      infoUser(window, ERR, "Failed to reset keybinds database.\t\n$1" % [
+        getCurrentExceptionMsg()])
 
 
 proc keybindsOpen*(widget: PWidget, data: gpointer) =
@@ -48,14 +95,7 @@ proc keybindsOpen*(widget: PWidget, data: gpointer) =
   vbSection[3].set_size_request(90, 40)
   vbSection[4].set_size_request(90, 40)
   
-
-  var
-    kbLabel: array[iKeybinds, PLabel]
-    cbMod1: array[iKeybinds, PComboBoxText]
-    cbMod2: array[iKeybinds, PComboBoxText]
-    btnKey:  array[iKeybinds, PButton]
-    tbEnable: array[iKeybinds, PToggleButton]
-  
+  var kbLabel: array[iKeybinds, PLabel]
   kbLabel[0] = label_new("File Chooser")
   kbLabel[1] = label_new("Capture Area & UP")
   kbLabel[2] = label_new("Capture Window & UP")
@@ -88,7 +128,7 @@ proc keybindsOpen*(widget: PWidget, data: gpointer) =
     cbMod2[i].set_size_request(-1, 40)
     vbSection[2].pack_start(cbMod2[i], false, false, 0)
     
-    btnKey[i] = button_new("(none)")
+    btnKey[i] = button_new("")
     btnKey[i].set_tooltip_text("Clock on button and press key you want to use.")
     discard btnKey[i].signal_connect("key-press-event",
      SIGNAL_FUNC(readKeyPress), nil)
@@ -106,8 +146,8 @@ proc keybindsOpen*(widget: PWidget, data: gpointer) =
   vbMain.pack_end(hbControl, false, false, 5)
     
   var btnReset = button_new("Reset")
-  # discard OBJECT(btnReset).signal_connect("clicked",
-  #  SIGNAL_FUNC(), winKeybinds)
+  discard OBJECT(btnReset).signal_connect("clicked",
+   SIGNAL_FUNC(keybindsReset), winKeybinds)
   btnReset.set_size_request(90, 30)
   hbControl.pack_start(btnReset, false, false, 0)
   
@@ -119,9 +159,12 @@ proc keybindsOpen*(widget: PWidget, data: gpointer) =
 
   var btnProfSave = button_new_from_stock(STOCK_SAVE)
   btnProfSave.set_size_request(90, 30)
-  # discard btnProfSave.signal_connect("clicked", SIGNAL_FUNC(profileSave), winProf)
+  discard btnProfSave.signal_connect("clicked",
+   SIGNAL_FUNC(keybindsSave), winKeybinds)
   hbControl.pack_end(btnProfSave, false, false, 0)
-
+  
+  var keyBinds = pdbConn.getKeyBindsAll()
+  keybindsSetActive(keyBinds)
   winKeybinds.show_all()
 
 

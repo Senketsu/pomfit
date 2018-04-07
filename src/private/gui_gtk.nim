@@ -21,10 +21,7 @@ var
   piIco*: PPixBuf
   pdbConn*: DbConn
   btnUpload: PButton
-  IsInstantUpload = false # to be loaded from config
   IsUploading = false
-  RequestedCancel = false
-  RequestedStart = false 
 
 import lib/gtk2ext
 

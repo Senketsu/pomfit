@@ -27,3 +27,10 @@ type
     MOD_SHIFT = (2,"<SHIFT>")
     MOD_ALT = (3,"<ALT>")
     MOD_WIN = (4,"<WIN>")
+  
+  TPomfitKb* = tuple
+    id: int
+    mod1, mod2:TBindModEnum
+    key: string
+    full: string
+    isActive: bool

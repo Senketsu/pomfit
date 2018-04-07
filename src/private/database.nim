@@ -3,11 +3,17 @@ import ndbex/db_sqlite_ex
 import projTypes
 import projUtils
 
-proc createDefaults(conn: DbConn) =
+const KeyBindsO = 8
+
+proc createDefaultProfiles(conn: DbConn) =
   conn.exec(sql("""INSERT INTO profiles (id, name, api, size, form_id,
     form_type, isActive) VALUES (0, ?, ?, 150000000, ?, ?, 1)"""), "Uguu.se",  
     "http://uguu.se/api.php?d=upload", "file", "multipart/form-data")
 
+proc createDefaultKeybinds(conn: DBConn) =
+  for i in 0..11:
+    conn.exec(sql("""INSERT INTO keybinds (id, mod1, mod2, key, full, isActive)
+     VALUES (?, ?, ?, ?, ?, ?)"""),i, 0, 0, "", "", 0)
 
 proc createPomfitDatabase(conn: DbConn) =
   try:
@@ -25,7 +31,14 @@ proc createPomfitDatabase(conn: DbConn) =
 
     conn.exec(sql("""CREATE TABLE queue (id INTEGER PRIMARY KEY AUTOINCREMENT,
       path VARCHAR(511) NOT NULL UNIQUE)"""))
-    conn.createDefaults()
+    
+    conn.exec(sql("""CREATE TABLE keybinds (id INTEGER PRIMARY KEY,
+      mod1 INTEGER NOT NULL DEFAULT 0, mod2 INTEGER NOT NULL DEFAULT 0,
+      key VARCHAR(7), full VARCHAR(63),
+      isActive INTEGER NOT NULL DEFAULT 0)"""))
+    
+    conn.createDefaultProfiles()
+    conn.createDefaultKeybinds()
   except:
     logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
@@ -125,7 +138,7 @@ proc updateProfileData*(conn: DbConn, pData: seq[string]): bool =
 proc resetProfiles*(conn: DbConn): bool =
   try:
     conn.exec(sql("""DELETE FROM profiles"""))
-    conn.createDefaults()
+    conn.createDefaultProfiles()
     result = true
   except:
     logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
@@ -177,4 +190,42 @@ proc getQueueLen*(conn: DbConn): int =
   except:
     logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
-    
+
+proc getKeyBindsAll*(conn: DbConn): seq[TPomfitKb] =
+  try:
+    var rows = conn.getAllRowsNew(sql("""SELECT * FROM keybinds"""))
+    result = @[]
+    var item: TPomfitKb
+    for i in 0..KeyBindsO:
+      item.id = parseInt(rows[i].data[0])
+      item.mod1 = cast[TBindModEnum](parseInt(rows[i].data[1]))
+      item.mod2 = cast[TBindModEnum](parseInt(rows[i].data[2]))
+      item.key = rows[i].data[3]
+      item.full = rows[i].data[4]
+      item.isActive = if rows[i].data[5] == "1": true else: false
+      result.add(item)
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+
+proc setKeyBindsAll*(conn: DbConn, keyBinds: seq[TPomfitKb]): bool =
+  try:
+    for i in 0..KeyBindsO:
+      conn.exec(sql("""INSERT OR REPLACE INTO keybinds (id, mod1, mod2, key,
+       full, isActive) VALUES (?, ?, ?, ?, ?, ?)"""), keyBinds[i].id,
+       ord(keyBinds[i].mod1), ord(keyBinds[i].mod2), keyBinds[i].key,
+      keyBinds[i].full, if keyBinds[i].isActive: 1 else: 0)
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+
+proc resetKeyBinds*(conn: DbConn): bool =
+  try:
+    conn.exec(sql("""DELETE FROM keybinds"""))
+    conn.createDefaultKeybinds()
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+
