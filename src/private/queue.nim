@@ -4,7 +4,7 @@ var
   tvQueue: PTreeView
   tvQueueStore: PTreeStore
   tvQueuePath: PTreePath
-
+  sbQueue: PStatusBar
 
 proc queueMenuItemDo(widget: PWidget, data: Pgpointer) =
   var
@@ -61,12 +61,14 @@ proc queueTreeViewRefresh() =
   var
     iter: TTreeIter
     limit: uint64 = parseBiggestUInt(pdbConn.getProfileDataActive("size"))
+    d: int = 0
   tvQueueStore.clear()
   var fileList = pdbConn.getQueueDataAll()
   for item in fileList:
     if item.existsFile():
       let size: uint64 = uint64(getFileSize(item))
-      let name = item.splitFile().name
+      let splFile = item.splitFile()
+      let name = splFile.name & splFile.ext
       var status = ""
       if size > limit and limit != 0:
         status = "BIG"
@@ -76,7 +78,13 @@ proc queueTreeViewRefresh() =
       tvQueueStore.append(addr iter, nil)
       tvQueueStore.set(addr iter, TVQ_NAME, name, TVQ_SIZE, strSize, TVQ_STATUS,
         status, TVQ_PATH, item, -1)
-
+    else:
+      if pdbConn.removeQueueData(item):
+        inc(d)
+  if d != 0:
+    discard sbQueue.push(1, "Removed $1 invalid queue item$2.." % [$d,
+      if d == 1: "" else: "s"])
+    pbUpdateIdle()
 
 proc queueCreateTreeViewMenu(window: gtk2.PWindow): PMenu =
   result = menu_new()
@@ -121,8 +129,8 @@ proc queueCreateTreeView(window: gtk2.PWindow, view: var PTreeView,
 
 
 proc queueStartUpload(widget: PWidget, data: Pgpointer) =
-  chanUp[].send("cmd_up")
-
+  uploadControl(widget, data)
+  closeWindow(widget, data)
 
 proc queueStartPfc(widget: PWidget, data: Pgpointer) =
   pfcStart(nil, data)
@@ -131,12 +139,14 @@ proc queueStartPfc(widget: PWidget, data: Pgpointer) =
 
 proc queueReset(widget: PWidget, data: Pgpointer) =
   let window = gtk2.WINDOW(data)
-  if pdbConn.resetQueue():
-    queueTreeViewRefresh()
-    pbUpdateIdle()
-  else:
-    infoUser(window, ERR, "Failed to delete all items from queue\t\n$1" % [
-      getCurrentExceptionMsg()])
+  if yesOrNo(window, "Do you really want to delete all items from queue ?"):
+    if pdbConn.resetQueue():
+      queueTreeViewRefresh()
+      pbUpdateIdle()
+      discard sbQueue.push(1, "Queue has been cleared of all items.")
+    else:
+      infoUser(window, ERR, "Failed to delete all items from queue\t\n$1" % [
+        getCurrentExceptionMsg()])
 
 
 proc queueOpen(widget: PWidget, data: Pgpointer) =
@@ -159,9 +169,9 @@ proc queueOpen(widget: PWidget, data: Pgpointer) =
   queueCreateTreeView(winQueue, tvQueue, tvQueueStore, tvMenu)
   CONTAINER(swQueue).add(WIDGET(tvQueue))
 
-  var sbQueue = statusbar_new()
+  sbQueue = statusbar_new()
   vbMain.pack_start(sbQueue, true, true, 0)
-  discard sbQueue.push(1, "Queue status bar..")
+  discard sbQueue.push(0, "")
 
   var hbControl = hbox_new(false, 5)
   hbControl.set_size_request(-1, 30)

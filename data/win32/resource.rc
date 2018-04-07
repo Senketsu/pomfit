@@ -1,5 +1,0 @@
-#include "../../src/resource.h"
-
-IDI_MYICON ICON "pomfit.ico"
-1 24 "pomfit.exe.manifest"
-

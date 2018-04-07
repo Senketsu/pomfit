@@ -7,8 +7,11 @@ import database
 
 const
   VERSION = "v0.5.0-alpha"
-  INFO = ("Pomf It ! $1" % VERSION)
+  NAME = "Pomf It !"
+  INFO = "$1 $2" % [NAME, VERSION]
   LINK = "https://github.com/Senketsu/pomfit"
+  TWITTER = "https://twitter.com/Senketsu_dev"
+  LICENSE = LINK & "/blob/devel/LICENSE.txt"
 
 var 
   chanUp*: ptr StringChannel
@@ -36,14 +39,13 @@ proc closeWindow(widget: PWidget, data: Pgpointer) =
 
 
 proc uploadControl(widget: PWidget, data: Pgpointer) =
-  var btn = BUTTON(widget)
   if IsUploading:
-    btn.set_relief(1)
-    btn.set_label("Stopping upload..")
+    btnUpload.set_relief(1)
+    btnUpload.set_label("Stopping upload..")
     chanUp[].send("cmd:stop")
   else:
-    btn.set_relief(1)
-    btn.set_label("Starting upload..")
+    btnUpload.set_relief(1)
+    btnUpload.set_label("Starting upload..")
     chanUp[].send("cmd:start")
 
 
@@ -137,7 +139,7 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   winMain.set_default_size(480, 270)
   discard winMain.signal_connect("destroy", SIGNAL_FUNC(gui_gtk.destroy), nil)
   piIco = pixbuf_new_from_file_at_size(joinPath(getAppDir(), 
-    "../data/pomfit.png"), 64, 64, nil)
+    "../data/logo.png"), 64, 64, nil)
   winMain.set_icon(piIco)
   var trayMenu = createTrayMenu(winMain)
   var pomfitTray = createTrayWidget(winMain, piIco, trayMenu)
@@ -151,6 +153,7 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   var vbNtbUp = vbox_new(false, 0)
   ntbMain.add(vbNtbUp)
   label = label_new("Upload")
+  label.set_size_request(100, 30)
   OBJECT(label).set("can-focus", false, nil)
   ntbMain.set_tab_label(get_nth_page(ntbMain, gint(0)), label)
   ntbMain.set_size_request(480, 240)
@@ -177,28 +180,33 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   var vbNtbSetting = vbox_new(false, 0)
   ntbMain.add(vbNtbSetting)
   label = label_new("Settings")
+  label.set_size_request(100, 30)
   OBJECT(label).set("can-focus", false, nil)
   ntbMain.set_tab_label(get_nth_page(ntbMain, gint(1)), label)
 
   var btnSettings = button_new("Settings")
+  btnSettings.set_size_request(-1, 50)
   discard OBJECT(btnSettings).signal_connect("clicked",
    SIGNAL_FUNC(gui_gtk.settingsOpen), winMain)
-  vbNtbSetting.pack_start(btnSettings, true, true, 0)
+  vbNtbSetting.pack_start(btnSettings, false, false, 0)
 
   var btnProfiles = button_new("Profiles")
+  btnProfiles.set_size_request(-1, 50)
   discard OBJECT(btnProfiles).signal_connect("clicked",
    SIGNAL_FUNC(gui_gtk.profilesOpen), winMain)
-  vbNtbSetting.pack_start(btnProfiles, true, true, 0)
+  vbNtbSetting.pack_start(btnProfiles, false, false, 0)
 
   var btnKeybinds = button_new("Keybinds")
+  btnKeybinds.set_size_request(-1, 50)
   # discard OBJECT(btnKeybinds).signal_connect("clicked",
   #  SIGNAL_FUNC(gui_gtk.keybindsOpen), winMain)
-  vbNtbSetting.pack_start(btnKeybinds, true, true, 0)
-  
+  vbNtbSetting.pack_start(btnKeybinds, false, false, 0)
+
   # Tab Tools
   var vbNtbTools = vbox_new(false, 0)
   ntbMain.add(vbNtbTools)
   label = label_new("Tools")
+  label.set_size_request(100, 30)
   OBJECT(label).set("can-focus", false, nil)
   ntbMain.set_tab_label(get_nth_page(ntbMain, gint(2)), label)
   
@@ -214,6 +222,59 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
    SIGNAL_FUNC(gui_gtk.queueOpen), winMain)
   vbNtbTools.pack_start(btnManager, false, false, 0)
 
+  # Tab About
+  var vbNtbAbout = vbox_new(false, 0)
+  ntbMain.add(vbNtbAbout)
+  label = label_new("About")
+  label.set_size_request(100, 30)
+  OBJECT(label).set("can-focus", false, nil)
+  ntbMain.set_tab_label(get_nth_page(ntbMain, gint(3)), label)
+
+  var hbAboutSplit = hbox_new(false, 0)
+  hbAboutSplit.set_size_request(-1, 160)
+  vbNtbAbout.pack_start(hbAboutSplit, false, false, 0)
+  
+  var pathLogo = joinPath(getAppDir(), "../data/logo_simple.png")
+  var pvImage = pixbuf_new_from_file_at_scale(pathLogo, 150, 150, false, nil)
+  var imgLogo = image_new_from_pixbuf(pvImage)
+  hbAboutSplit.pack_start(imgLogo, false, false, 0)
+
+  var vbAboutText = vbox_new(false, 0)
+  vbAboutText.set_size_request(300, -1)
+  hbAboutSplit.pack_start(vbAboutText, false, false, 0)
+  
+  var labAbout = label_new("")
+  labAbout.set_justify(JUSTIFY_CENTER)
+  labAbout.set_markup("<span weight='bold' font='Sans Mono 24'>$1</span>" % [NAME])
+  vbAboutText.pack_start(labAbout, false, false, 0)
+
+  labAbout = label_new("")
+  labAbout.set_justify(JUSTIFY_CENTER)
+  labAbout.set_markup("<span style='italic' font='Sans 12'>$1</span>" % [VERSION])
+  vbAboutText.pack_start(labAbout, false, false, 0)
+
+  labAbout = label_new("")
+  labAbout.set_justify(JUSTIFY_CENTER)
+  labAbout.set_markup("<span style='italic' font='Sans 10'>$1</span>" % [
+    "Designed by Senketsu"])
+  vbAboutText.pack_start(labAbout, false, false, 0)
+
+  var hbLinks = hbox_new(false, 10)
+  hbLinks.set_size_request(-1, 30)
+  vbNtbAbout.pack_end(hbLinks, false, false, 0)
+
+  var btnLicense = link_button_new_with_label(LICENSE, "License Information")
+  btnLicense.set_size_request(150, 30)
+  hbLinks.pack_start(btnLicense, false, false, 0)
+  
+  var btnGitHub = link_button_new_with_label(LINK, "GitHub Page")
+  btnGitHub.set_size_request(150, 30)
+  hbLinks.pack_start(btnGitHub, false, false, 0)
+  
+  var btnSenketsu = link_button_new_with_label(TWITTER, "@Senketsu_dev")
+  btnSenketsu.set_size_request(150, 30)
+  hbLinks.pack_start(btnSenketsu, false, false, 0)
+  
   var hboxBottom = hbox_new(false, 10)
   vbMain.pack_end(hboxBottom, true, false, 0)
   hboxBottom.set_size_request(-1, 30)
