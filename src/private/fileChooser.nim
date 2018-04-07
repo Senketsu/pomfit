@@ -89,7 +89,7 @@ else:
     
     result = @[]
     if dialog.run() == cint(RESPONSE_ACCEPT):
-      var uriList = dialog.get_uris()
+      var uriList = dialog.get_filenames()
       while uriList != nil:
         result.add($cast[cstring](uriList.data))
         g_free(uriList.data)
@@ -98,17 +98,15 @@ else:
     dialog.destroy()
   
   proc pfcStart*(widget: PWidget, data: Pgpointer){.procvar.} =
-    let fileURIs = pfcOpen(WINDOW(data))
-    if fileURIs != @[]:
+    let filePaths = pfcOpen(WINDOW(data))
+    if filePaths != @[]:
       var fNO = 0
       var info: string = ""
-      for uri in fileURIs:
-        var filePath = uri
-        filePath.delete(0,6)
+      for path in filePaths:
         if IsInstantUpload:
-          chanUp[].send("file:$1" % [filePath])
+          chanUp[].send("file:$1" % [path])
         else:
-          if pdbConn.addQueueData(filePath):
+          if pdbConn.addQueueData($path):
             inc(fNo)
       if IsInstantUpload:
         info = ("Selected $1 file$2 for upload." % [

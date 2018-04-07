@@ -17,9 +17,9 @@ proc queueMenuItemDo(widget: PWidget, data: Pgpointer) =
     model.get(addr iter, TVQ_PATH, addr filePath, -1)
     case cmd
     of TVQ_OFI:
-      discard execShellCmd("xdg-open $1" % [$filePath])
+      discard execShellCmd("xdg-open \"$1\"" % [$filePath])
     of TVQ_OFO:
-      discard execShellCmd("xdg-open $1" % [($filePath).splitFile().dir])
+      discard execShellCmd("xdg-open \"$1\"" % [($filePath).splitFile().dir])
     of TVQ_REM:
       if pdbConn.removeQueueData($filePath):
         TREE_STORE(model).remove(addr iter)

@@ -86,6 +86,7 @@ include fileChooser
 include settings
 include profiles
 include queue
+include keybinds
 
 proc createTrayMenu(win: gtk2.PWindow): PMenu =
   result = menu_new()
@@ -198,8 +199,8 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
 
   var btnKeybinds = button_new("Keybinds")
   btnKeybinds.set_size_request(-1, 50)
-  # discard OBJECT(btnKeybinds).signal_connect("clicked",
-  #  SIGNAL_FUNC(gui_gtk.keybindsOpen), winMain)
+  discard OBJECT(btnKeybinds).signal_connect("clicked",
+   SIGNAL_FUNC(gui_gtk.keybindsOpen), winMain)
   vbNtbSetting.pack_start(btnKeybinds, false, false, 0)
 
   # Tab Tools
