@@ -12,4 +12,8 @@ type
     TVQ_STATUS = (2, "Status")
     TVQ_PATH = (3, "Path")
     TVQ_iCol = (4, "nil")
-    
+  
+  tvQueueDo* = enum
+    TVQ_OFI = 0
+    TVQ_OFO = 1
+    TVQ_REM = 2

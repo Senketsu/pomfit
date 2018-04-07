@@ -17,8 +17,12 @@ var
   sbMain*: PStatusBar
   piIco*: PPixBuf
   pdbConn*: DbConn
+  btnUpload: PButton
+  IsInstantUpload = false # to be loaded from config
+  IsUploading = false
+  RequestedCancel = false
+  RequestedStart = false 
 
-import fileChooser
 import lib/gtk2ext
 
 proc destroy(widget: PWidget, data: Pgpointer) {.cdecl.} =
@@ -29,6 +33,27 @@ proc destroy(widget: PWidget, data: Pgpointer) {.cdecl.} =
 
 proc closeWindow(widget: PWidget, data: Pgpointer) =
   WINDOW(data).destroy()
+
+
+proc uploadControl(widget: PWidget, data: Pgpointer) =
+  var btn = BUTTON(widget)
+  if IsUploading:
+    btn.set_relief(1)
+    btn.set_label("Stopping upload..")
+    chanUp[].send("cmd:stop")
+  else:
+    btn.set_relief(1)
+    btn.set_label("Starting upload..")
+    chanUp[].send("cmd:start")
+
+
+proc pbUpdateIdle() =
+  var qlen = pdbConn.getQueueLen()
+  if qlen == 0:
+    pbMain.set_text("No ongoing operations & 0 files in the queue.")
+  else:
+    pbMain.set_text("There $1 $2 file$3 in the queue.." % [
+      if qlen == 1: "is" else: "are", $qlen, if qlen == 1: "" else: "s"])
 
 
 proc showTrayMenu(icon: PStatusIcon, btnID: guint,
@@ -55,6 +80,10 @@ proc createTrayWidget(win: gtk2.PWindow, icon: PPixbuf, menu: PMenu): PStatusIco
   result.status_icon_set_tooltip_text(INFO)
   result.status_icon_set_visible(true)
 
+include fileChooser
+include settings
+include profiles
+include queue
 
 proc createTrayMenu(win: gtk2.PWindow): PMenu =
   result = menu_new()
@@ -70,8 +99,7 @@ proc createTrayMenu(win: gtk2.PWindow): PMenu =
     miShow = menu_item_new("Show / Hide")
     miQuit = menu_item_new("Quit")
 
-  discard OBJECT(miFile).signal_connect("activate",
-   SIGNAL_FUNC(fileChooser.start), win)
+  discard OBJECT(miFile).signal_connect("activate", SIGNAL_FUNC(pfcStart), win)
   # discard OBJECT(miFullUp).signal_connect("activate",
   #  SIGNAL_FUNC(), nil)
   # discard OBJECT(miAreaUp).signal_connect("activate",
@@ -98,10 +126,6 @@ proc createTrayMenu(win: gtk2.PWindow): PMenu =
   result.show_all()
 
 
-include settings
-include profiles
-include queue
-
 proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
 
   var winMain: gtk2.PWindow
@@ -117,7 +141,6 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   winMain.set_icon(piIco)
   var trayMenu = createTrayMenu(winMain)
   var pomfitTray = createTrayWidget(winMain, piIco, trayMenu)
-  
 
   var vbMain = vbox_new(false, 2)
   winMain.add(vbMain)
@@ -136,17 +159,18 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   vbNtbUp.add(hboxUp)
 
   var btnChooser = button_new_from_stock(STOCK_OPEN)
+  btnChooser.set_size_request(230, -1)
   discard OBJECT(btnChooser).signal_connect("clicked",
-   SIGNAL_FUNC(fileChooser.start), winMain)
+   SIGNAL_FUNC(pfcStart), winMain)
   hboxUp.pack_start(btnChooser, true, true, 0)
 
-  var btnUpload = button_new("Upload")
-  # discard OBJECT(btnUpload).signal_connect("clicked",
-  #  SIGNAL_FUNC(addToQueue), nil)
+  btnUpload = button_new("Upload")
+  btnUpload.set_size_request(230, -1)
+  discard OBJECT(btnUpload).signal_connect("clicked",
+   SIGNAL_FUNC(uploadControl), nil)
   hboxUp.pack_start(btnUpload, true, true, 0)
 
   pbMain = progress_bar_new()
-  pbMain.set_text("No ongoing operations..")
   vbNtbUp.pack_start(pbMain, true, true, 0)
 
   # Tab Settings
@@ -170,7 +194,6 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   # discard OBJECT(btnKeybinds).signal_connect("clicked",
   #  SIGNAL_FUNC(gui_gtk.keybindsOpen), winMain)
   vbNtbSetting.pack_start(btnKeybinds, true, true, 0)
-
   
   # Tab Tools
   var vbNtbTools = vbox_new(false, 0)
@@ -180,9 +203,16 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   ntbMain.set_tab_label(get_nth_page(ntbMain, gint(2)), label)
   
   var btnQueue = button_new("Upload queue")
+  btnQueue.set_size_request(-1, 50)
   discard OBJECT(btnQueue).signal_connect("clicked",
    SIGNAL_FUNC(gui_gtk.queueOpen), winMain)
-  vbNtbTools.pack_start(btnQueue, true, true, 0)
+  vbNtbTools.pack_start(btnQueue, false, false, 0)
+
+  var btnManager = button_new("Uploads DB")
+  btnManager.set_size_request(-1, 50)
+  discard OBJECT(btnManager).signal_connect("clicked",
+   SIGNAL_FUNC(gui_gtk.queueOpen), winMain)
+  vbNtbTools.pack_start(btnManager, false, false, 0)
 
   var hboxBottom = hbox_new(false, 10)
   vbMain.pack_end(hboxBottom, true, false, 0)
@@ -202,7 +232,8 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   chanUp = channelUp
   chanMain = channelMain
   pdbConn = openPomfitDatabase()
-
+  
+  pbUpdateIdle()
   winMain.show_all()
   main()
 

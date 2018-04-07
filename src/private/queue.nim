@@ -3,26 +3,33 @@ import gdk2
 var
   tvQueue: PTreeView
   tvQueueStore: PTreeStore
+  tvQueuePath: PTreePath
 
-proc queueMenuItemRemove(widget: PWidget, data: Pgpointer) =
+
+proc queueMenuItemDo(widget: PWidget, data: Pgpointer) =
   var
-    model = TREE_VIEW(widget.get_parent()).get_model()
-    iter: PTreeIter
-    path: PTreePath
-  if model.get_iter(iter, path):
-    TREE_STORE(model).remove(iter)
-
-
-proc queueMenuItemOpenFile(widget: PWidget, data: Pgpointer) =
-  echoInfo("TODO: queue menu item open file")
-
-
-proc queueMenuItemOpenFolder(widget: PWidget, data: Pgpointer) =
-  echoInfo("TODO: queue menu item open folder")
+    model = get_model(tvQueue)
+    iter: TTreeIter
+    filePath: cstring
+    cmd = cast[tvQueueDo](data)
+  
+  if model.get_iter(addr iter, tvQueuePath):
+    model.get(addr iter, TVQ_PATH, addr filePath, -1)
+    case cmd
+    of TVQ_OFI:
+      discard execShellCmd("xdg-open $1" % [$filePath])
+    of TVQ_OFO:
+      discard execShellCmd("xdg-open $1" % [($filePath).splitFile().dir])
+    of TVQ_REM:
+      if pdbConn.removeQueueData($filePath):
+        TREE_STORE(model).remove(addr iter)
+        pbUpdateIdle()
+    else:
+      discard
 
 
 proc queueTreeViewShowMenu(widget: PTreeView, event: PEventButton,
-                            data: Pgpointer, path: PTreePath) =
+                            data: Pgpointer) =
   let menu = MENU(data)
   menu.popup(nil, nil, nil, nil, event.button, get_time(cast[PEvent](event)))
 
@@ -33,27 +40,26 @@ proc queueTreeViewBtnCb(widget: PWIDGET, event: PEventButton,
     var
       view = TREE_VIEW(widget)
       selection = view.get_selection()
-      path: PTreePath
 
     if selection.count_selected_rows() <= 1:
       if view.get_path_at_pos(gint(event.x), gint(event.y),
-       addr path, nil, 0, 0) != 0:
+       addr tvQueuePath, nil, 0, 0) != 0:
         selection.unselect_all()
-        selection.select_path(path)
-      if path != nil:
-        view.queueTreeViewShowMenu(event, data, path)
+        selection.select_path(tvQueuePath)
+      if tvQueuePath != nil:
+        view.queueTreeViewShowMenu(event, data)
       return true
   return false
 
 
 proc queueTreeViewMenuCb(widget: PWidget, data: Pgpointer): bool =
-  TREE_VIEW(widget).queueTreeViewShowMenu(nil, data, nil)
+  TREE_VIEW(widget).queueTreeViewShowMenu(nil, data)
   return true
 
 
 proc queueTreeViewRefresh() =
   var
-    iter: PTreeIter
+    iter: TTreeIter
     limit: uint64 = parseBiggestUInt(pdbConn.getProfileDataActive("size"))
   tvQueueStore.clear()
   var fileList = pdbConn.getQueueDataAll()
@@ -67,8 +73,8 @@ proc queueTreeViewRefresh() =
       else:
         status = " OK"
       var strSize = "$1 MB" % [ (float(size) / 1000000) | (10,2)]
-      tvQueueStore.append(iter, nil)
-      tvQueueStore.set(iter, TVQ_NAME, name, TVQ_SIZE, strSize, TVQ_STATUS,
+      tvQueueStore.append(addr iter, nil)
+      tvQueueStore.set(addr iter, TVQ_NAME, name, TVQ_SIZE, strSize, TVQ_STATUS,
         status, TVQ_PATH, item, -1)
 
 
@@ -76,15 +82,15 @@ proc queueCreateTreeViewMenu(window: gtk2.PWindow): PMenu =
   result = menu_new()
   var
     miOpenFile = menu_item_new("Open File")
-    miOpenFolder = menu_item_new("Open File")
-    miRemove = menu_item_new("Remove from Queue")
+    miOpenFolder = menu_item_new("Open Folder")
+    miRemove = menu_item_new("Remove from queue")
   
   discard OBJECT(miOpenFile).signal_connect("activate",
-   SIGNAL_FUNC(queueMenuItemOpenFile), window)
+   SIGNAL_FUNC(queueMenuItemDo), cast[Pgpointer](TVQ_OFI))
   discard OBJECT(miOpenFolder).signal_connect("activate",
-   SIGNAL_FUNC(queueMenuItemOpenFolder), window)
+   SIGNAL_FUNC(queueMenuItemDo), cast[Pgpointer](TVQ_OFO))
   discard OBJECT(miRemove).signal_connect("activate",
-   SIGNAL_FUNC(queueMenuItemRemove), window) 
+   SIGNAL_FUNC(queueMenuItemDo), cast[Pgpointer](TVQ_REM)) 
   
   MENU_SHELL(result).append(miOpenFile)
   MENU_SHELL(result).append(miOpenFolder)
@@ -118,10 +124,16 @@ proc queueStartUpload(widget: PWidget, data: Pgpointer) =
   chanUp[].send("cmd_up")
 
 
+proc queueStartPfc(widget: PWidget, data: Pgpointer) =
+  pfcStart(nil, data)
+  queueTreeViewRefresh()
+
+
 proc queueReset(widget: PWidget, data: Pgpointer) =
   let window = gtk2.WINDOW(data)
   if pdbConn.resetQueue():
     queueTreeViewRefresh()
+    pbUpdateIdle()
   else:
     infoUser(window, ERR, "Failed to delete all items from queue\t\n$1" % [
       getCurrentExceptionMsg()])
@@ -163,7 +175,7 @@ proc queueOpen(widget: PWidget, data: Pgpointer) =
 
   var btnBrowse = button_new("Add files")
   discard OBJECT(btnBrowse).signal_connect("clicked",
-   SIGNAL_FUNC(fileChooser.start), winQueue)
+   SIGNAL_FUNC(queueStartPfc), winQueue)
   btnBrowse.set_size_request(90, 30)
   hbControl.pack_start(btnBrowse, false, false, 20)
 
@@ -179,5 +191,6 @@ proc queueOpen(widget: PWidget, data: Pgpointer) =
   btnUpload.set_size_request(90, 30)
   hbControl.pack_end(btnUpload, false, false, 20)
   
+  queueTreeViewRefresh()
   winQueue.show_all()
 

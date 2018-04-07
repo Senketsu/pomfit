@@ -1,15 +1,7 @@
-import projTypes
-import projUtils
-
 when defined(guiHybrid):
   discard ## TODO
+
 else:
-
-  import os, strutils
-  import glib2, gtk2, gdk2pixbuf
-  from gui_gtk import chanMain, chanUp, sbMain
-
-
   proc yesOrNo*(window: PWindow, question: string): bool =
     let label = label_new(question)
     let ynDialog = dialog_new_with_buttons(question, window,
@@ -30,9 +22,9 @@ else:
     dialog.setTitle("Pomfit Info")
     discard dialog.run()
     dialog.destroy()
-
-
-  proc update(widget: PWidget, data: Pgpointer) =
+  
+  
+  proc pfcUpdate(widget: PWidget, data: Pgpointer) =
     var dialog = FILE_CHOOSER(widget)
     let pvPath = get_preview_filename(dialog)
     if pvPath == nil or pvPath == "":
@@ -57,7 +49,7 @@ else:
     dialog.set_preview_widget_active(false)
   
   
-  proc create(window: PWindow, curDir: string = ""): PFileChooser =
+  proc pfcCreate(window: PWindow, curDir: string = ""): PFileChooser =
     var preview = image_new()
     preview.set_size_request(224, 224)
 
@@ -87,11 +79,11 @@ else:
     result.set_select_multiple(true)
     result.set_preview_widget(preview)
     discard result.g_signal_connect("update-preview",
-     G_CALLBACK(fileChooser.update), nil)
+     G_CALLBACK(gui_gtk.pfcUpdate), nil)
 
 
-  proc open(window: PWindow, root: string = ""): seq[string] =
-    var dialog = fileChooser.create(window)
+  proc pfcOpen(window: PWindow, root: string = ""): seq[string] =
+    var dialog = pfcCreate(window)
     if root.len > 0:
       discard dialog.set_current_folder_uri(root)
     
@@ -105,13 +97,25 @@ else:
       free(uriList)
     dialog.destroy()
   
-  proc start*(widget: PWidget, data: Pgpointer){.procvar.} =
-    let filePaths = fileChooser.open(WINDOW(data))
-    if filePaths != @[]:
-      for path in filePaths:
-        chanUp[].send("file: $1" % path)
-      let fNo = (filePaths.high + 1)
-      let info = ("Added $1 file$2 into the queue." % [
-        $fNo, if fNo == 0: "" else: "s"])
+  proc pfcStart*(widget: PWidget, data: Pgpointer){.procvar.} =
+    let fileURIs = pfcOpen(WINDOW(data))
+    if fileURIs != @[]:
+      var fNO = 0
+      var info: string = ""
+      for uri in fileURIs:
+        var filePath = uri
+        filePath.delete(0,6)
+        if IsInstantUpload:
+          chanUp[].send("file:$1" % [filePath])
+        else:
+          if pdbConn.addQueueData(filePath):
+            inc(fNo)
+      if IsInstantUpload:
+        info = ("Selected $1 file$2 for upload." % [
+          $fNo, if fNo == 1: "" else: "s"])
+      else:
+        info = ("Added $1 new file$2 into the queue." % [
+          $fNo, if fNo == 1: "" else: "s"])
       discard sbMain.push(0, info)
+      pbUpdateIdle()
 

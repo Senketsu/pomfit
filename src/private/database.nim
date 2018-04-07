@@ -150,4 +150,31 @@ proc getQueueDataAll*(conn: DbConn): seq[string] =
     logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
 
+proc removeQueueData*(conn: DbConn, path: string): bool =
+  try:
+    conn.exec(sql("""DELETE FROM queue WHERE path = ?"""), path)
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+    
 
+proc addQueueData*(conn: DbConn, path: string): bool =
+  try:
+    conn.exec(sql("""INSERT INTO queue (path) VALUES (?)"""), path)
+    result = true
+  except:
+    let errMsg = getCurrentExceptionMsg()
+    if errMsg.startsWith("UNIQUE constraint"):
+      discard
+    else:
+      logEvent(true, "***Error: $1\n$2" % [errMsg, repr getCurrentException()])
+
+
+proc getQueueLen*(conn: DbConn): int =
+  try:
+    var len = conn.getValue(sql("""SELECT COUNT(*) FROM queue"""))
+    result = parseInt(len)
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+    
