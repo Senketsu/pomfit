@@ -1,9 +1,33 @@
+const iSettOpt = 10
+var settEntry: array[iSettOpt, PEntry]
+
+
 
 proc settingsSave(widget: PWidget, data: Pgpointer) =
-  echoInfo("*Debug: TODO: Save settings")
+  var window = WINDOW(data)
+  var settingsData: seq[TPomfitSett] = @[]
+  for i in 0..iSettOpt-1:
+    var data: TPomfitSett
+    data.id = i
+    data.name = $(cast[SettingsEnum](i))
+    data.value = $settEntry[i].get_text()
+    settingsData.add(data)
+  
+  if not pdbConn.setSettingsAll(settingsData):
+    infoUser(window, ERR, "Failed to save settings.")
+    
 
 proc settingsReset(widget: PWidget, data: Pgpointer) =
-  echoInfo("*Debug: TODO: Reset settings")
+  var window = WINDOW(data)
+  if not pdbConn.resetSettings():
+    infoUser(window, ERR, "Failed to reset settings.")
+
+
+proc settingsLoad() =
+  var settings = pdbConn.getSettingsAll()
+  for item in settings:
+    settEntry[item.id].set_text(cstring(item.value))
+
 
 proc tbToggleLabel(widget: PWidget, data: Pgpointer) =
   let button = TOGGLE_BUTTON(widget)
@@ -40,34 +64,38 @@ proc settingsOpen(widget: PWidget, data: Pgpointer) {.procvar.} =
   vbMainTab[2].set_size_request(150, -1)
   vbMainTab[3].set_size_request(150, -1)
   
-  var
-    descLabel: array[6, PLabel]
-    tbOption: array[6, PToggleButton]
-  for i in 0..5:
+  var descLabel: array[iSettOpt, PLabel]
+  for i in 0..iSettOpt-1:
     descLabel[i] = label_new("")
-    tbOption[i] = toggle_button_new("OwO") ## REMOVE
-    discard tbOption[i].signal_connect("toggled", SIGNAL_FUNC(tbToggleLabel), nil)
-    if i < 3:
+    settEntry[i] = entry_new()
+    if i < 5:
       vbMainTab[0].pack_start(descLabel[i], false, false, 0)
-      vbMainTab[1].pack_start(tbOption[i], false, false, 0)
+      vbMainTab[1].pack_start(settEntry[i], false, false, 0)
     else:
       vbMainTab[2].pack_start(descLabel[i], false, false, 0)
-      vbMainTab[3].pack_start(tbOption[i], false, false, 0)
+      vbMainTab[3].pack_start(settEntry[i], false, false, 0)
       
-  descLabel[0].set_text("1")
-  descLabel[0].set_tooltip_text("")
-  descLabel[1].set_text("2")
-  descLabel[1].set_tooltip_text("")
-  descLabel[2].set_text("3")
-  descLabel[2].set_tooltip_text("")
-
-
+  descLabel[0].set_text($SS_PATH)
+  descLabel[0].set_tooltip_text("Where to save your screenshots")
+  descLabel[1].set_text($SS_NAME)
+  descLabel[1].set_tooltip_text("Custom filename for your screenshots")
+  descLabel[2].set_text($SS_TS)
+  descLabel[2].set_tooltip_text("Timestamp format string\ndefault: 'yyyy-MM-dd-HH'_'mm'_'ss'")
   descLabel[3].set_text("4")
   descLabel[3].set_tooltip_text("")
   descLabel[4].set_text("5")
   descLabel[4].set_tooltip_text("")
+
   descLabel[5].set_text("6")
   descLabel[5].set_tooltip_text("")
+  descLabel[6].set_text("7")
+  descLabel[6].set_tooltip_text("")
+  descLabel[7].set_text("8")
+  descLabel[7].set_tooltip_text("")
+  descLabel[8].set_text("9")
+  descLabel[8].set_tooltip_text("")
+  descLabel[9].set_text("10")
+  descLabel[9].set_tooltip_text("")
 
   var hbControl = hbox_new(false, 5)
   hbControl.set_size_request(-1, 30)
@@ -91,4 +119,5 @@ proc settingsOpen(widget: PWidget, data: Pgpointer) {.procvar.} =
   btnSave.set_size_request(90, 30)
   hbControl.pack_end(btnSave, false, false, 10)
   
+  settingsLoad()
   winSett.show_all()

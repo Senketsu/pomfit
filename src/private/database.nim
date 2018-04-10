@@ -36,6 +36,9 @@ proc createPomfitDatabase(conn: DbConn) =
       mod1 INTEGER NOT NULL DEFAULT 0, mod2 INTEGER NOT NULL DEFAULT 0,
       key VARCHAR(7), full VARCHAR(63),
       isActive INTEGER NOT NULL DEFAULT 0)"""))
+
+    conn.exec(sql("""CREATE TABLE settings (id INTEGER PRIMARY KEY,
+      name VARCHAR(127) NOT NULL, value VARCHAR(127) NOT NULL)"""))
     
     conn.createDefaultProfiles()
     conn.createDefaultKeybinds()
@@ -228,4 +231,47 @@ proc resetKeyBinds*(conn: DbConn): bool =
   except:
     logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
+
+proc getSettings*(conn: DbConn, choice: int): string =
+  result = ""
+  try:
+    var value = conn.getValueNew(sql("""SELECT value FROM settings 
+      WHERE id = ?"""), choice)
+    if value.hasData:
+      result = value.data
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+
+proc getSettingsAll*(conn: DbConn): seq[TPomfitSett] =
+  try:
+    result = @[]
+    var rows = conn.getAllRowsNew(sql("""SELECT * FROM settings"""))
+    for item in rows:
+      var data: TPomfitSett
+      data.id = parseInt(item.data[0])
+      data.name = item.data[1]
+      data.value = item.data[2]
+      result.add(data)
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+
+proc setSettingsAll*(conn: DbConn, data: seq[TPomfitSett]): bool =
+  try:
+    for item in data:
+      if item.name != "":
+        conn.exec(sql("""INSERT OR REPLACE INTO settings (id, name, value)
+          VALUES (?, ?, ?)"""),item.id, item.name, item.value)
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+
+
+proc resetSettings*(conn: DbConn): bool =
+  try:
+    conn.exec(sql("""DELETE FROM settins"""))
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 

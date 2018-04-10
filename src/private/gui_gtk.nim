@@ -13,7 +13,8 @@ const
   TWITTER = "https://twitter.com/Senketsu_dev"
   LICENSE = LINK & "/blob/devel/LICENSE.txt"
 
-var 
+var
+  winMain*: gtk2.PWindow
   chanUp*: ptr StringChannel
   chanMain*: ptr StringChannel
   pbMain*: PProgressBar
@@ -22,6 +23,7 @@ var
   pdbConn*: DbConn
   btnUpload: PButton
   IsUploading = false
+  InstantUpload = false
 
 import lib/gtk2ext
 
@@ -83,7 +85,9 @@ include fileChooser
 include settings
 include profiles
 include queue
+include keybinds_cb
 include keybinds
+
 
 proc createTrayMenu(win: gtk2.PWindow): PMenu =
   result = menu_new()
@@ -100,14 +104,14 @@ proc createTrayMenu(win: gtk2.PWindow): PMenu =
     miQuit = menu_item_new("Quit")
 
   discard OBJECT(miFile).signal_connect("activate", SIGNAL_FUNC(pfcStart), win)
-  # discard OBJECT(miFullUp).signal_connect("activate",
-  #  SIGNAL_FUNC(), nil)
-  # discard OBJECT(miAreaUp).signal_connect("activate",
-  #  SIGNAL_FUNC(), nil)
-  # discard OBJECT(miFull).signal_connect("activate",
-  #  SIGNAL_FUNC(), nil)
-  # discard OBJECT(miArea).signal_connect("activate",
-  #  SIGNAL_FUNC(), nil)
+  discard OBJECT(miFullUp).signal_connect("activate",
+   SIGNAL_FUNC(takeScreenShotKb), cast[pointer](FULL_UP))
+  discard OBJECT(miAreaUp).signal_connect("activate",
+   SIGNAL_FUNC(takeScreenShotKb), cast[pointer](AREA_UP))
+  discard OBJECT(miFull).signal_connect("activate",
+   SIGNAL_FUNC(takeScreenShotKb), cast[pointer](FULL_CAP))
+  discard OBJECT(miArea).signal_connect("activate",
+   SIGNAL_FUNC(takeScreenShotKb), cast[pointer](AREA_CAP))
   discard OBJECT(miShow).signal_connect("activate",
    SIGNAL_FUNC(gui_gtk.toggleVisible), win)
   discard OBJECT(miQuit).signal_connect("activate",
@@ -128,9 +132,9 @@ proc createTrayMenu(win: gtk2.PWindow): PMenu =
 
 proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
 
-  var winMain: gtk2.PWindow
   var label: PLabel
   nim_init()
+  nkb_init()
   winMain = window_new(gtk2.WINDOW_TOPLEVEL)
   winMain.set_position(WIN_POS_MOUSE)
   winMain.set_title(INFO)
@@ -293,6 +297,7 @@ proc createMainWin*(channelMain, channelUp:  ptr StringChannel) =
   pdbConn = openPomfitDatabase()
   
   pbUpdateIdle()
+  keybindsSetActive()
   winMain.show_all()
   main()
 

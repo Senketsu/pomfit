@@ -1,3 +1,4 @@
+import nkb
 
 const
   oKeybinds = 8
@@ -37,12 +38,40 @@ proc clearKeyBind* (keybind: var TPomfitKb) =
   keybind.isActive = false
 
 
-proc keybindsSetActive(keyBinds: seq[TPomfitKb]) =
+proc keybindsEdit(keyBinds: seq[TPomfitKb]) =
   for i in 0..oKeybinds:
     cbMod1[i].set_active(gint(ord(keyBinds[i].mod1)))
     cbMod2[i].set_active(gint(ord(keyBinds[i].mod2)))
     btnKey[i].set_label(keyBinds[i].key)
     tbEnable[i].set_active(keyBinds[i].isActive)
+
+proc keybindsSetActive() =
+  var allBinds = pdbConn.getKeyBindsAll()
+  nkb_unbind_all()
+  for kb in allBinds:
+    if kb.isActive:
+      case kb.id
+      of 0:
+        discard nkb_bind(cstring(kb.full), fileChooserKb, nil)
+      of 1:
+        discard nkb_bind(cstring(kb.full), takeScreenShotKb, cast[pointer](AREA_UP))
+      of 2:
+        discard nkb_bind(cstring(kb.full), takeScreenShotKb, cast[pointer](AWIN_UP))
+      of 3:
+        discard nkb_bind(cstring(kb.full), takeScreenShotKb, cast[pointer](FULL_UP))
+      of 4:
+        discard nkb_bind(cstring(kb.full), takeScreenShotKb, cast[pointer](AREA_CAP))
+      of 5:
+        discard nkb_bind(cstring(kb.full), takeScreenShotKb, cast[pointer](AWIN_CAP))
+      of 6:
+        discard nkb_bind(cstring(kb.full), takeScreenShotKb, cast[pointer](FULL_CAP))
+      of 7:
+        discard
+      of 8:
+        discard
+      else:
+        discard
+
 
 
 proc keybindsSave(widge: PWidget, data: Pgpointer) =
@@ -50,17 +79,17 @@ proc keybindsSave(widge: PWidget, data: Pgpointer) =
   for i in 0..oKeybinds:
     var newBind: TPomfitKb
     var iMod1 = if cbMod1[i].get_active() < 0: 0 else: cbMod1[i].getActive()
-    var iMod2 = if cbMod2[i].get_active() < 0: 0 else: cbMod1[i].getActive()
+    var iMod2 = if cbMod2[i].get_active() < 0: 0 else: cbMod2[i].getActive()
     var sKey = $btnKey[i].get_label()
     newBind.id = i
     newBind.mod1 = cast[TBindModEnum](iMod1)
-    newBind.mod2 = cast[TBindModEnum](iMod1)
+    newBind.mod2 = cast[TBindModEnum](iMod2)
     newBind.key = sKey.toUpperAscii()
     newBind.isActive = tbEnable[i].get_active()  
     newBind.full = "$1$2$3" % [$newBind.mod1, $newBind.mod2, newBind.key]
     keyBinds.add(newBind)
   if pdbConn.setKeyBindsAll(keyBinds):
-    discard ## TODO: set em in nkb
+    keybindsSetActive()
 
 proc keybindsReset(widget: PWidget, data: Pgpointer) =
   let window = gtk2.WINDOW(data)
@@ -164,7 +193,7 @@ proc keybindsOpen*(widget: PWidget, data: gpointer) =
   hbControl.pack_end(btnProfSave, false, false, 0)
   
   var keyBinds = pdbConn.getKeyBindsAll()
-  keybindsSetActive(keyBinds)
+  keybindsEdit(keyBinds)
   winKeybinds.show_all()
 
 

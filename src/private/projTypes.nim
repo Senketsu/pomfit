@@ -34,3 +34,29 @@ type
     key: string
     full: string
     isActive: bool
+  
+  SSMode* = enum
+    FULL_CAP = (0, "")
+    FULL_UP = (1, "up")
+    AREA_CAP = (2, "")
+    AREA_UP = (3, "up")
+    WIN_CAP = (4, "")
+    WIN_UP = (5, "up")
+    AWIN_CAP = (6, "")
+    AWIN_UP = (7, "up")
+
+  TPomfitSett* = tuple
+    id: int
+    name, value: string
+
+  SettingsEnum* = enum
+    SS_PATH = (0, "SS Folder")
+    SS_NAME = (1, "SS Filename")
+    SS_TS = (2, "SS Timestamp")
+    UNKNOW_02 = (3, "")
+    UNKNOW_03 = (4, "")
+    UNKNOW_04 = (5, "")
+    UNKNOW_05 = (6, "")
+    UNKNOW_06 = (7, "")
+    UNKNOW_07 = (8, "")
+    UNKNOW_08 = (9, "")

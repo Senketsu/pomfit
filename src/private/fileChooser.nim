@@ -103,16 +103,14 @@ else:
       var fNO = 0
       var info: string = ""
       for path in filePaths:
-        if IsInstantUpload:
-          chanUp[].send("file:$1" % [path])
-        else:
-          if pdbConn.addQueueData($path):
-            inc(fNo)
-      if IsInstantUpload:
-        info = ("Selected $1 file$2 for upload." % [
-          $fNo, if fNo == 1: "" else: "s"])
-      else:
-        info = ("Added $1 new file$2 into the queue." % [
+        if pdbConn.addQueueData($path):
+          inc(fNo)
+      # if IsInstantUpload:
+      #   chanUp[].send("file:$1" % [path])
+      #   info = ("Selected $1 file$2 for upload." % [
+      #     $fNo, if fNo == 1: "" else: "s"])
+      # else:
+      info = ("Added $1 new file$2 into the queue." % [
           $fNo, if fNo == 1: "" else: "s"])
       discard sbMain.push(0, info)
       pbUpdateIdle()
