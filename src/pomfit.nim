@@ -2,6 +2,7 @@ import os, strutils
 import private/projUtils
 import private/projTypes
 import private/gui
+import private/uploader
 
 
 when defined(Windows):
@@ -23,12 +24,8 @@ proc threadUploaderStart (threadID: int) {.thread.} =
   let chanMain = channelMain.addr
   let chanUp = channelUploader.addr 
 
-  ## TODO: Uploader duh
-  while true:
-    let chanBuffer = chanUp[].recv()
-    echo "chanUp received: " & chanBuffer
-    if chanBuffer == "quit":
-      quit(QuitSuccess)
+  sleep(1000)
+  uploader.idle(chanMain, chanUp)
 
 
 proc threadMainStart(threadID: int) {.thread.} =

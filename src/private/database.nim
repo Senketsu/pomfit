@@ -7,8 +7,10 @@ const KeyBindsO = 8
 
 proc createDefaultProfiles(conn: DbConn) =
   conn.exec(sql("""INSERT INTO profiles (id, name, api, size, form_id,
-    form_type, isActive) VALUES (0, ?, ?, 150000000, ?, ?, 1)"""), "Uguu.se",  
-    "http://uguu.se/api.php?d=upload", "file", "multipart/form-data")
+    form_type, form_name, prepend, append, regex_f, regex_d, isActive) VALUES 
+    (0, ?, ?, 150000000, ?, ?, ?, ?, ?, ?, ?, 1)"""), "Uguu.se",  
+    "http://uguu.se/api.php?d=upload", "file", "multipart/form-data",
+     "", "", "", "", "")
 
 proc createDefaultKeybinds(conn: DBConn) =
   for i in 0..11:
@@ -73,10 +75,29 @@ proc getProfilesNames*(conn: DbConn): seq[string] =
   except:
     logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
+proc getProfileActive*(conn: DbConn): TPuProfile =
+  try:
+    let row = conn.getAllRowsNew(sql("""SELECT * FROM profiles WHERE isActive = 1"""))
+    result.name = row[0].data[1]
+    result.api = row[0].data[2]
+    result.size = row[0].data[3]
+    result.regex_f = row[0].data[4]
+    result.regex_d = row[0].data[5]
+    result.formID = row[0].data[6]
+    result.formType = row[0].data[7]
+    result.formName = row[0].data[8]
+    result.prepStr = row[0].data[9]
+    result.appStr = row[0].data[10]
+  except:
+    logEvent(true, "***Error DB: Reading profile data..\t\n '$1'" % [
+      getCurrentExceptionMsg()])
+
+
 proc getProfileDataActive*(conn: DbConn, name: string): string =
   try:
     result = ""
-    let res = conn.getValueNew(sql("""SELECT size FROM profiles WHERE isActive = 1"""))
+    var queryRaw = "SELECT $1 FROM profiles WHERE isActive = 1" % name
+    let res = conn.getValueNew(sql(queryRaw))
     if res.hasData:
       result = res.data
     else:
@@ -84,7 +105,6 @@ proc getProfileDataActive*(conn: DbConn, name: string): string =
   except:
     logEvent(true, "***Error DB: Reading profile data..\t\n '$1'" % [
       getCurrentExceptionMsg()])
-
 
 proc getProfileDataAll*(conn: DbConn, name: string): seq[string] =
   try:
@@ -155,10 +175,11 @@ proc resetQueue*(conn: DbConn): bool =
     logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
 
-proc getQueueDataAll*(conn: DbConn): seq[string] =
+proc getQueueDataAll*(conn: DbConn, order: string = "ASC", limit: string = "-1"): seq[string] =
   try:
     result = @[]
-    var rows = conn.getAllRowsNew(sql("""SELECT path FROM queue"""))
+    var queryRaw = "SELECT path FROM queue ORDER BY id $1 LIMIT ?" % order
+    var rows = conn.getAllRowsNew(sql(queryRaw), limit)
     for row in rows:
       if row.hasData:
         result.add(row.data)
@@ -275,3 +296,12 @@ proc resetSettings*(conn: DbConn): bool =
   except:
     logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
 
+
+proc addUploadsData*(conn: DbConn, data: TPuData): bool =
+  try:
+    conn.exec(sql("""INSERT INTO uploads (name, url, durl, path) VALUES 
+      (?, ?, ?, ?)"""), data.name, data.url, data.durl, data.path)
+    result = true
+  except:
+    logEvent(true, "***Error: $1\n$2" % [getCurrentExceptionMsg(), repr getCurrentException()])
+    

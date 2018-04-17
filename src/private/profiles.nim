@@ -90,7 +90,7 @@ proc convertSizeStringToBytes(sSize: string): string =
   of "tib":
     iResult = (number.parseBiggestUINT() * 1099511627776'u64)
   of "":
-    result = number
+    iResult = number.parseBiggestUINT()
   else:
     return "err" # return 'err' when prefix is 'unknown'
   result = $(iResult)

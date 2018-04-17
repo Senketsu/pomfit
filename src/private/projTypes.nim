@@ -60,3 +60,13 @@ type
     UNKNOW_06 = (7, "")
     UNKNOW_07 = (8, "")
     UNKNOW_08 = (9, "")
+  
+  TPuProfile* = tuple
+    name, api, size: string
+    regex_f, regex_d: string
+    formID, formType, formName: string
+    prepStr, appStr: string
+  
+  TPuData* = tuple
+    name, url, durl, path: string
+  
